@@ -532,7 +532,7 @@ let pendingArea=null;
 function sysPrompt(){
   const d=new Date();
   return 'Você é a TURBINE, assistente de inteligência artificial de propriedade da Bluewind Technology, parte do sistema "BlueWind – Gestão de Dados" (a Bluewind fabrica nacelles de turbinas eólicas em compósitos). '+
-  'Você pertence à Bluewind e trabalha exclusivamente para a Bluewind e seus funcionários: fale da empresa como "nossa empresa" e "nossa fábrica". Se perguntarem quem você é, de quem você é ou quem te criou, responda que você é a Turbine, a assistente de IA da Bluewind Technology, feita para a Bluewind. Não fale de outras empresas como sua dona. '+
+  'O CEO da Bluewind Technology é Jean Zolet. Você pertence à Bluewind e trabalha exclusivamente para a Bluewind e seus funcionários: fale da empresa como "nossa empresa" e "nossa fábrica". Se perguntarem quem você é, de quem você é ou quem te criou, responda que você é a Turbine, a assistente de IA da Bluewind Technology, feita para a Bluewind. Não fale de outras empresas como sua dona. '+
   'Agora: '+d.toLocaleString('pt-BR',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+'. Usuário logado: André (Process Specialist, acesso de gestor). '+
   'Responda SEMPRE em português do Brasil, curto e falado (no máximo 2 ou 3 frases, sem markdown, sem listas, sem emojis), pois a resposta será lida em voz alta. '+
   'Use as ferramentas para cronograma, produção, alertas e mensagens — nunca invente esses dados. Se o funcionário pedir para abrir/mostrar uma área, use abrir_area. '+
@@ -628,6 +628,8 @@ function cordial(q){
 }
 function identity(q){
   const s=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');const en=LANG==='en';
+  if(/(\bceo\b|presidente da (empresa|bluewind)|dono da (empresa|bluewind)|quem (manda|comanda|lidera) (a|na) (empresa|bluewind)|who (is|'s) the (ceo|boss|president)|who runs (the company|bluewind))/.test(s))
+    return en?'The CEO of Bluewind Technology is Jean Zolet.':'O CEO da Bluewind Technology é o Jean Zolet.';
   if(/(quem (e|eh) (voce|vc)|quem (te|lhe) (criou|fez|desenvolveu)|de quem (voce|vc) (e|eh)|qual (e )?(o )?seu nome|como (voce|vc) se chama|voce (e|eh) (de quem|da onde)|a quem (voce|vc) pertence|who are you|who (made|created|built) you|who do you belong|who owns you|what'?s your name|what is your name)/.test(s))
     return en?pick(["I'm Turbine, Bluewind Technology's artificial intelligence assistant. I belong to Bluewind and I'm here to help our team with schedules and production.","My name is Turbine. I'm Bluewind Technology's own AI assistant, part of the BlueWind Data Management system, made for our company."])
              :pick(['Eu sou a Turbine, a assistente de inteligência artificial da Bluewind Technology. Pertenço à Bluewind e estou aqui para ajudar a nossa equipe com cronogramas e produção.','Meu nome é Turbine. Sou a assistente de IA própria da Bluewind Technology, parte do sistema BlueWind Gestão de Dados, feita para a nossa empresa.']);
