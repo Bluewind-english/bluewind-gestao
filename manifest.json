@@ -1,6 +1,6 @@
 {
-  "name": "Turbine – BlueWind Gestão de Produção",
-  "short_name": "Turbine",
+  "name": "BW AI – BlueWind Gestão de Produção",
+  "short_name": "BW AI",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
