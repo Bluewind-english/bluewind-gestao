@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.json">
@@ -182,6 +182,12 @@ body{min-height:100vh;background:#01030a}
 .core::after{display:none}
 .flag{background:none;border:0;padding:2px;cursor:pointer;opacity:.45;border-radius:4px;transition:opacity .2s,box-shadow .2s;line-height:0}
 .flag.on{opacity:1;box-shadow:0 0 0 1.5px #4fd8ff,0 0 10px rgba(79,216,255,.6)}
+
+/* sem zoom e sem seleção de texto (padrão dos apps) */
+html,body,*{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%;overscroll-behavior:none}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;font-size:16px}
+img,svg,canvas{-webkit-user-drag:none;user-drag:none}
 </style>
 </head>
 <body>
@@ -932,6 +938,20 @@ if(!window.claude){
   const dd=makeDeviceDictation();if(dd){dict=dd;hookDict();mic.style.display='flex';document.getElementById('hint').textContent=LANG==='en'?'Tap the mic and talk to Turbine, or type.':'Toque no microfone e fale com a Turbine, ou digite.'}
   const dt=makeDeviceTTS();if(dt){tts=dt;dt.onState(({state})=>{if(!vmOn)return;if(state==='speaking'){if(vmMode!=='talk')vmSet('talk',TX('RESPONDENDO'))}else if(state==='idle'){talkDone()}})}
 }
+
+
+/* ---------- bloqueia zoom (pinça e duplo toque) e menu de seleção ---------- */
+(function(){
+  const no=e=>e.preventDefault();
+  ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,no,{passive:false}));
+  document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});
+  let last=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-last<300&&!(e.target.closest&&e.target.closest('input,textarea')))e.preventDefault();last=n},{passive:false});
+  document.addEventListener('dblclick',no,{passive:false});
+  document.addEventListener('contextmenu',e=>{if(!(e.target.closest&&e.target.closest('input,textarea')))e.preventDefault()});
+  document.addEventListener('selectstart',e=>{if(!(e.target.closest&&e.target.closest('input,textarea')))e.preventDefault()});
+  document.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault()},{passive:false});
+  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['+','-','=','0'].includes(e.key))e.preventDefault()});
+})();
 
 /* capabilities */
 const hint=document.getElementById('hint');
