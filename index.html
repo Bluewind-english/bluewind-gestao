@@ -460,7 +460,7 @@ const tb=document.getElementById('tb'),chat=document.getElementById('chat'),inp=
       st=document.getElementById('tbState'),orb=document.getElementById('tbOrb'),core=document.getElementById('core');
 let sample=null,dict=null,tts=null,voiceOn=true,hist=[],busy=false,greeted=false;
 function openTB(){closeSheet();SFX.turbine();tb.classList.add('open');if(!greeted){greeted=true;addB('a','Olá! Eu sou a Turbine, a assistente de IA da Bluewind Technology. Posso mostrar o cronograma, o status da produção e os alertas. O que você precisa?')}}
-core.onclick=()=>openVM();document.querySelectorAll('[data-open=turbine]').forEach(e=>e.onclick=openTB);
+core.onclick=()=>{openVM();if(dict)talkToggle()};document.querySelectorAll('[data-open=turbine]').forEach(e=>e.onclick=openTB);
 document.getElementById('tbX').onclick=()=>{SFX.close();tb.classList.remove('open');stopSpeak()};
 document.getElementById('snd').onclick=e=>{voiceOn=!voiceOn;sfxOn=voiceOn;e.currentTarget.textContent=voiceOn?'🔊':'🔇';if(!voiceOn)stopSpeak()};
 ['Como está a produção?','O que está atrasado hoje?','Cronograma de amanhã','Temperatura hoje','Preço do dólar','Abrir mensagens'].forEach(q=>{
@@ -471,8 +471,8 @@ function setState(t,fast){st.textContent=t;orb.classList.toggle('fast',!!fast);c
 let voiceInfo='';
 function vInfo(m){voiceInfo=m;const e=document.getElementById('vmVoice');if(e)e.textContent=m}
 let LANG='pt';try{LANG=localStorage.getItem('turbineLang')||'pt'}catch(e){}
-const TXM={'MODO VOZ':'VOICE MODE','OUVINDO…':'LISTENING…','PROCESSANDO…':'PROCESSING…','RESPONDENDO':'RESPONDING','TOQUE PARA FALAR DE NOVO':'TAP TO SPEAK AGAIN',
- 'TOQUE PARA ENVIAR':'TAP TO SEND','TOQUE E DIGA: "TURBINE…"':'TAP AND SAY: "TURBINE…"','NÃO ENTENDI — TOQUE DE NOVO':"DIDN'T CATCH THAT — TAP AGAIN",'PRONTA':'READY',
+const TXM={'MODO VOZ':'VOICE MODE','OUVINDO…':'LISTENING…','PROCESSANDO…':'PROCESSING…','RESPONDENDO':'RESPONDING','TOQUE PARA FALAR DE NOVO':'TAP TO SPEAK AGAIN','TOQUE NO TRIÂNGULO':'TAP THE TRIANGLE',
+ 'TOQUE PARA ENVIAR':'TAP TO SEND','TOQUE E DIGA: "TURBINE…"':'TAP AND SAY: "TURBINE…"','TOQUE NO TRIÂNGULO PARA FALAR':'TAP THE TRIANGLE TO SPEAK','NÃO ENTENDI — TOQUE DE NOVO':"DIDN'T CATCH THAT — TAP AGAIN",'PRONTA':'READY',
  'MICROFONE INDISPONÍVEL':'MICROPHONE UNAVAILABLE','VER DEMONSTRAÇÃO':'SEE DEMO','▶ DEMONSTRAÇÃO':'▶ DEMO','⌨ DIGITAR PERGUNTA':'⌨ TYPE A QUESTION',
  'Sim? Estou ouvindo.':"Yes? I'm listening.",'COMECE COM "TURBINE…"':'START WITH "TURBINE…"'};
 function TX(t){return LANG==='en'&&TXM[t]?TXM[t]:t}
@@ -500,7 +500,7 @@ function localAnswerEN(q){const s=q.toLowerCase();if(/dollar|weather|temperature
   return quickAnswerEN(q)||"I can help you with the schedule, production, alerts and messages. What would you like to know?"}
 let speakTok=0;
 const VOICE={v:'rounded',r:.95};
-function talkDone(){if(vmOn&&vmMode==='talk')vmSet('idle',TX('TOQUE PARA FALAR DE NOVO'))}
+function talkDone(){if(vmOn&&vmMode==='talk')vmSet('idle',TX('TOQUE NO TRIÂNGULO PARA FALAR'))}
 function speak(t,tries){
   if(!voiceOn){vInfo('🔇 Som desligado (botão 🔊)');setTimeout(talkDone,Math.min(12000,1500+t.length*55));return}
   if(!tts){vInfo(LANG==='en'?'🔇 Voice unavailable on this device':'🔇 Voz indisponível neste aparelho');setTimeout(talkDone,Math.min(12000,1500+t.length*55));return}
@@ -683,7 +683,7 @@ function hookDict(){
   dict.onState(({state})=>{
     if(state==='listening'){listening=true;SFX.listen();if(vmOn){armSilence(6000);vmSet('live',TX('OUVINDO…'));vmBtn.textContent=TX('TOQUE PARA ENVIAR');return}mic.classList.add('live');setState('Ouvindo…',true)}
     else{listening=false;clearTimeout(silT);if(discard){discard=false;finalTxt='';mic.classList.remove('live');return}
-      vmBtn.textContent=TX('TOQUE E DIGA: "TURBINE…"');mic.classList.remove('live');setState('Pronta para ajudar',false);if(vmOn){const q=finalTxt;finalTxt='';if(q)vmSet('think',TX('PROCESSANDO…'));vmHeard(q);return}if(finalTxt){inp.value=finalTxt;finalTxt='';try{inp.focus()}catch(e){}}}
+      vmBtn.textContent=TX('TOQUE NO TRIÂNGULO PARA FALAR');mic.classList.remove('live');setState('Pronta para ajudar',false);if(vmOn){const q=finalTxt;finalTxt='';if(q)vmSet('think',TX('PROCESSANDO…'));vmHeard(q);return}if(finalTxt){inp.value=finalTxt;finalTxt='';try{inp.focus()}catch(e){}}}
   });
 }
 
@@ -805,10 +805,11 @@ HUD(document.getElementById('vmCv'),{k:6,wave:1.35,glitter:420,label:false,space
 function vmSet(mode,txt){vm.classList.toggle('live',mode==='live');vm.classList.toggle('talk',mode==='talk');vmSt.textContent=txt;
   vmMode=mode}
 function openVM(){SFX.turbine();unlockDeviceVoice();vmOn=true;vm.classList.add('open');vmYou.textContent='';vmAns.textContent='';vmSet('idle',TX('MODO VOZ'));
-  vmBtn.style.display=dict?'block':'none';vmBtn.textContent=TX('TOQUE E DIGA: "TURBINE…"')}
+  vmBtn.style.display=dict?'block':'none';vmBtn.textContent=TX('TOQUE NO TRIÂNGULO PARA FALAR')}
 function closeVM(){SFX.close();vmOn=false;vm.classList.remove('open');stopSpeak();if(dict&&listening){discard=true;dict.stop().catch(()=>{})}vmSet('idle',TX('MODO VOZ'))}
 document.getElementById('vmOpen').onclick=openVM;
-document.getElementById('hudMain').onclick=()=>openVM();document.getElementById('vmX').onclick=closeVM;
+document.getElementById('hudMain').onclick=()=>{openVM();if(dict)talkToggle()};document.getElementById('vmX').onclick=closeVM;
+vm.addEventListener('click',e=>{if(e.target.closest('button'))return;if(!dict){vmSet('idle',TX('MICROFONE INDISPONÍVEL'));return}talkToggle()});
 document.getElementById('vmType').onclick=()=>{closeVM();openTB()};
 async function vmHeard(raw){
   raw=(raw||'').trim();if(!raw){vmSet('idle',TX('NÃO ENTENDI — TOQUE DE NOVO'));return}
@@ -820,11 +821,15 @@ async function vmHeard(raw){
   const ans=await ask(q);if(!vmOn)return;vmAns.textContent=ans||'';vmSet('talk',TX('RESPONDENDO'));
 }
 function typeIn(el,txt,cb){let i=0;el.textContent='';const t=setInterval(()=>{el.textContent=txt.slice(0,++i);if(i>=txt.length){clearInterval(t);cb&&cb()}},55)}
-vmBtn.onclick=()=>{
+function talkToggle(){
   unlockDeviceVoice();
-  if(dict&&listening){clearTimeout(silT);dict.stop().catch(()=>{});return}
+  if(!dict)return false;
+  if(dict&&listening){clearTimeout(silT);dict.stop().catch(()=>{});return true}
   if(dict){stopSpeak();finalTxt='';vmYou.textContent='';vmAns.textContent='';
-    dict.start().catch(e=>{if(e&&e.code==='not_granted'){dict=null;vmBtn.textContent=TX('VER DEMONSTRAÇÃO')}vmSet('idle',TX('MICROFONE INDISPONÍVEL'))});return}
+    dict.start().catch(e=>{if(e&&e.code==='not_granted'){dict=null;vmBtn.style.display='none'}vmSet('idle',TX('MICROFONE INDISPONÍVEL'))});return true}
+  return false}
+vmBtn.onclick=()=>{
+  if(talkToggle())return;
   // demonstração (celular): simula a fala
   const demos=['Turbine, como está a produção?','Turbine, o que está atrasado hoje?','Turbine, cronograma de amanhã','Turbine, quanto está o dólar?'];
   const d=demos[(vmBtn._i=(vmBtn._i||0)+1)%demos.length];
@@ -862,7 +867,7 @@ document.getElementById('vmDemo').onclick=()=>{
 
 function applyLang(){document.querySelectorAll('.flag').forEach(f=>f.classList.toggle('on',f.dataset.l===LANG));
   document.getElementById('vmDemo').textContent=TX('▶ DEMONSTRAÇÃO');document.getElementById('vmType').textContent=TX('⌨ DIGITAR PERGUNTA');
-  if(!listening)vmBtn.textContent=TX('TOQUE E DIGA: "TURBINE…"');if(vmMode==='idle')vmSt.textContent=TX('MODO VOZ');
+  if(!listening)vmBtn.textContent=TX('TOQUE NO TRIÂNGULO PARA FALAR');if(vmMode==='idle')vmSt.textContent=TX('MODO VOZ');
   inp.placeholder=LANG==='en'?'Ask Turbine…':'Pergunte à Turbine…'}
 document.querySelectorAll('.flag').forEach(f=>f.onclick=()=>{if(LANG===f.dataset.l)return;LANG=f.dataset.l;try{localStorage.setItem('turbineLang',LANG)}catch(e){}hist=[];SFX.tap();stopSpeak();applyLang();
   speak(LANG==='en'?"English selected. I'm ready.":'Português selecionado. Estou pronta.')});
