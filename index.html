@@ -632,13 +632,65 @@ function identity(q){
     return en?pick(["I'm Turbine, Bluewind Technology's artificial intelligence assistant. I belong to Bluewind and I'm here to help our team with schedules and production.","My name is Turbine. I'm Bluewind Technology's own AI assistant, part of the BlueWind Data Management system, made for our company."])
              :pick(['Eu sou a Turbine, a assistente de inteligência artificial da Bluewind Technology. Pertenço à Bluewind e estou aqui para ajudar a nossa equipe com cronogramas e produção.','Meu nome é Turbine. Sou a assistente de IA própria da Bluewind Technology, parte do sistema BlueWind Gestão de Dados, feita para a nossa empresa.']);
   return null}
+
+/* ---------- Camada 1: dados do dia a dia (serviços públicos gratuitos) ---------- */
+const CITY={name:'Pensacola',lat:30.4213,lon:-87.2169,tz:'America/Chicago'};
+const liveCache={};
+async function getJSON(url,ttl){const c=liveCache[url];if(c&&Date.now()-c.t<ttl)return c.d;
+  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),5000);
+  try{const r=await fetch(url,{signal:ctl.signal});if(!r.ok)throw new Error(r.status);const d=await r.json();liveCache[url]={t:Date.now(),d};return d}finally{clearTimeout(to)}}
+const WMO_PT={0:'céu limpo',1:'predominantemente limpo',2:'parcialmente nublado',3:'nublado',45:'neblina',48:'neblina',51:'garoa fraca',53:'garoa',55:'garoa forte',61:'chuva fraca',63:'chuva',65:'chuva forte',66:'chuva congelante',67:'chuva congelante',71:'neve fraca',73:'neve',75:'neve forte',80:'pancadas de chuva',81:'pancadas de chuva',82:'pancadas fortes de chuva',95:'trovoadas',96:'trovoadas com granizo',99:'trovoadas com granizo'};
+const WMO_EN={0:'clear skies',1:'mostly clear',2:'partly cloudy',3:'cloudy',45:'fog',48:'fog',51:'light drizzle',53:'drizzle',55:'heavy drizzle',61:'light rain',63:'rain',65:'heavy rain',66:'freezing rain',67:'freezing rain',71:'light snow',73:'snow',75:'heavy snow',80:'rain showers',81:'rain showers',82:'heavy rain showers',95:'thunderstorms',96:'thunderstorms with hail',99:'thunderstorms with hail'};
+const fmtBR=(n,d)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const cToF=c=>Math.round(c*9/5+32);
+function greetingFor(q){const m=q.match(/^\s*(?:turbine[,.!]?\s*)?(bom dia|boa tarde|boa noite|good morning|good afternoon|good evening|ol[aá]|oi|hello|hi)\b/i);if(!m)return '';
+  const c=cordial(m[1]);return typeof c==='string'?c.replace(/\s*(Como (você )?est[aá][^.?!]*[.?!]|How are you[^.?!]*[.?!]|How are you feeling[^.?!]*[.?!])\s*(Estou aqui para o que precisar\.|Em que posso ajudar hoje\?|How can I help you today\?|I am here for whatever you need\.)?/g,'').trim():''}
+const HOL_PT={"New Year's Day":'Ano Novo','Martin Luther King, Jr. Day':'Dia de Martin Luther King',"Washington's Birthday":'Dia dos Presidentes','Memorial Day':'Memorial Day','Juneteenth National Independence Day':'Juneteenth','Independence Day':'Dia da Independência','Labour Day':'Dia do Trabalho','Labor Day':'Dia do Trabalho','Columbus Day':'Dia de Colombo','Veterans Day':'Dia dos Veteranos','Thanksgiving Day':'Dia de Ação de Graças','Christmas Day':'Natal'};
+async function liveAnswer(q){
+  const s=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''),en=LANG==='en';
+  // moedas
+  if(/(dolar|dollar|cambio|cotacao|exchange rate|euro|\breal\b|reais|moeda|currency)/.test(s)){
+    const d=await getJSON('https://open.er-api.com/v6/latest/USD',10*60000);if(!d||!d.rates||!d.rates.BRL)return null;
+    const brl=d.rates.BRL,eurBrl=brl/d.rates.EUR,usdEur=1/d.rates.EUR;
+    if(/euro/.test(s))return en?'One euro is worth '+eurBrl.toFixed(2)+' Brazilian reais, and '+usdEur.toFixed(2)+' US dollars today.':'O euro está valendo R$ '+fmtBR(eurBrl,2)+' hoje. Em dólar, um euro vale US$ '+fmtBR(usdEur,2)+'.';
+    return en?'Today one US dollar is worth '+brl.toFixed(2)+' Brazilian reais. The euro is at '+eurBrl.toFixed(2)+' reais.':'Hoje o dólar está valendo R$ '+fmtBR(brl,2)+'. O euro está em R$ '+fmtBR(eurBrl,2)+'.';
+  }
+  // clima
+  if(/(clima|tempo (hoje|amanha|agora|la fora)|temperatura|chov|chuva|frio|calor|graus|previsao|weather|temperature|rain|forecast|hot|cold outside)/.test(s)){
+    const u='https://api.open-meteo.com/v1/forecast?latitude='+CITY.lat+'&longitude='+CITY.lon+'&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&timezone='+encodeURIComponent(CITY.tz)+'&forecast_days=2';
+    const d=await getJSON(u,10*60000);if(!d||!d.current)return null;
+    const W=en?WMO_EN:WMO_PT,tom=/(amanha|tomorrow)/.test(s),i=tom?1:0;
+    const mx=d.daily.temperature_2m_max[i],mn=d.daily.temperature_2m_min[i],pr=d.daily.precipitation_probability_max[i],wc=d.daily.weather_code[i];
+    if(tom)return en?'Tomorrow in '+CITY.name+': '+(W[wc]||'mixed weather')+', high of '+cToF(mx)+' and low of '+cToF(mn)+' degrees Fahrenheit, with a '+pr+'% chance of rain.'
+                    :'Amanhã em '+CITY.name+': '+(W[wc]||'tempo variável')+', máxima de '+Math.round(mx)+' e mínima de '+Math.round(mn)+' graus, com '+pr+'% de chance de chuva.';
+    const c=d.current;
+    return en?'Right now in '+CITY.name+' it is '+cToF(c.temperature_2m)+' degrees Fahrenheit, feels like '+cToF(c.apparent_temperature)+'. Conditions: '+(W[c.weather_code]||'mixed weather')+'. Today: high of '+cToF(mx)+', low of '+cToF(mn)+', and a '+pr+'% chance of rain.'
+             :'Agora em '+CITY.name+' está fazendo '+Math.round(c.temperature_2m)+' graus, sensação de '+Math.round(c.apparent_temperature)+'. Condição: '+(W[c.weather_code]||'tempo variável')+'. Hoje a máxima é de '+Math.round(mx)+' e a mínima de '+Math.round(mn)+' graus, com '+pr+'% de chance de chuva.';
+  }
+  // feriados
+  if(/(feriado|holiday)/.test(s)){
+    const d=await getJSON('https://date.nager.at/api/v3/NextPublicHolidays/US',6*3600000);if(!Array.isArray(d)||!d.length)return null;
+    const h=d.find(x=>x.global!==false)||d[0],[y,m,dd]=h.date.split('-').map(Number),dt=new Date(y,m-1,dd);
+    const days=Math.round((dt-new Date(new Date().setHours(0,0,0,0)))/86400000);
+    return en?'The next US holiday is '+h.name+', on '+dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+', in '+days+' days.'
+             :'O próximo feriado nos Estados Unidos é o '+(HOL_PT[h.name]||h.name)+(HOL_PT[h.name]&&HOL_PT[h.name]!==h.name?' ('+h.name+')':'')+', '+dt.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+', daqui a '+days+' dias.';
+  }
+  // data
+  if(/(que dia (e|eh) hoje|qual (e )?a data|data de hoje|what day is (it|today)|what'?s the date|today'?s date)/.test(s)){
+    const t=new Date();return en?'Today is '+t.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'.'
+                                :'Hoje é '+t.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'.';
+  }
+  return null;
+}
 let greetPrefix='';
 function quickAnswer(q){greetPrefix='';const id=identity(q);if(id)return id;const c=cordial(q);if(c&&typeof c==='string')return c;if(c&&c.ai){greetPrefix=c.greet;return null}return quickFactory(q)}
 let askCtl=null;
 async function ask(q){
   q=(q||'').trim();if(!q)return;if(busy&&askCtl){try{askCtl.abort()}catch(e){}}busy=true;inp.value='';addB('u',q);stopSpeak();
   setState('Pensando…',true);SFX.think();const b=addB('a','…');pendingArea=null;let ans='';
-  const qa=quickAnswer(q);
+  let qa=null;
+  try{const la=await liveAnswer(q);if(la){const g=greetingFor(q);qa=(g?g+' ':'')+la}}catch(e){}
+  if(!qa)qa=quickAnswer(q);
   try{
     if(qa){ans=qa}
     else if(sample){
