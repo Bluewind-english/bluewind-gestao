@@ -501,7 +501,8 @@ function localAnswerEN(q){const s=q.toLowerCase();if(/dollar|weather|temperature
 let speakTok=0;
 const VOICE={v:'rounded',r:.95};
 function talkDone(){if(vmOn&&vmMode==='talk')vmSet('idle',TX('TOQUE NO TRIÂNGULO PARA FALAR'))}
-function speak(t,tries){
+function sayFix(t){return t.replace(/Zoll?et/g,LANG==='en'?'Zolay':'Zolê')}
+function speak(t,tries){t=sayFix(t);
   if(!voiceOn){vInfo('🔇 Som desligado (botão 🔊)');setTimeout(talkDone,Math.min(12000,1500+t.length*55));return}
   if(!tts){vInfo(LANG==='en'?'🔇 Voice unavailable on this device':'🔇 Voz indisponível neste aparelho');setTimeout(talkDone,Math.min(12000,1500+t.length*55));return}
   tries=tries||0;if(!tries)speakTok++;const tok=speakTok;
