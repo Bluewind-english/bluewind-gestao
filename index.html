@@ -238,7 +238,7 @@ body{min-height:100vh;background:#01030a}
     <div class="core" id="core" title="Falar com a Turbine"><svg class="blades"><use href="#blades"/></svg></div>
     
   </div>
-  <div class="demo">PROTÓTIPO · DADOS DE DEMONSTRAÇÃO</div>
+  <div class="demo" id="dataSrc">PROTÓTIPO · DADOS DE DEMONSTRAÇÃO</div>
 </div>
 
 <!-- Sheet -->
@@ -333,7 +333,7 @@ const HIST=[
  ['07:58','Qualidade','Aprovou inspeção da N-103'],['07:05','Produção','Publicou meta do dia']
 ];
 const EQUIPE=[['Turno 1','06:00 – 14:30','18 pessoas'],['Turno 2','14:30 – 23:00','15 pessoas'],['Supervisão','Plantão','2 pessoas']];
-const prodPct=Math.round(NAC.reduce((a,n)=>a+n.prog,0)/NAC.length);
+let prodPct=Math.round(NAC.reduce((a,n)=>a+n.prog,0)/NAC.length);
 
 /* ---------- Header widgets ---------- */
 (function(){
@@ -373,7 +373,7 @@ const AREAS=[
     const AG=[-110,-70,-5,30,62,118,150,185];const ang=AG[[0,1,2,3,7,6,5,4][i]]*Math.PI/180, r=43;
     const n=document.createElement('div');n.className='node';n.style.setProperty('--c',a.c);
     n.style.left=(50+r*Math.cos(ang))+'%';n.style.top=(50+r*Math.sin(ang))+'%';
-    n.innerHTML='<svg viewBox="0 0 24 24">'+IC[a.k]+'</svg><label>'+a.n+'</label>'+(a.b?'<span class="badge">'+a.b+'</span>':'');
+    n.innerHTML='<svg viewBox="0 0 24 24">'+IC[a.k]+'</svg><label>'+a.n+'</label>'+(a.b?'<span class="badge" id="badge-'+a.k+'">'+a.b+'</span>':'');
     n.onclick=()=>{SFX.tap();openArea(a.k)};o.appendChild(n);
   });
 })();
@@ -472,11 +472,11 @@ function demoAnswerEN(){const am=addD(1),d106=DAYS_EN[addD(3).getDay()];
    'N-104 is still waiting for quality release, which may delay finishing. I suggest prioritizing the N-104 inspection at the start of the shift.'}
 function quickAnswerEN(q){const s=q.toLowerCase();
   if(/dollar|weather|temperature|news/.test(s))return null;
-  if(/tomorrow/.test(s)&&/produc|delay|late|problem|status|how/.test(s))return demoAnswerEN();
+  if(/tomorrow/.test(s)&&/produc|delay|late|problem|status|how/.test(s))return tomorrowSummary(true);
   if(/tomorrow/.test(s)&&/schedul|agenda|plan/.test(s)){pendingArea='crono';return 'Tomorrow: '+enItems(CRONO[1])+'.'}
-  if(/delay|late|behind|problem/.test(s))return 'N-106 is about four hours behind because of unstable vacuum in the infusion. Also watch N-104, which is waiting for quality release.';
-  if(/alert/.test(s)){pendingArea='alert';return 'There are 2 active alerts: N-106 is delayed by unstable vacuum, and N-104 is waiting for quality.'}
-  if(/produc|status|nacelle|line/.test(s)){pendingArea='prod';return 'We have '+NAC.length+' nacelles on the line, at '+prodPct+'% of the weekly goal. N-106 is delayed and N-104 is waiting for quality release. The others are on schedule.'}
+  if(/delay|late|behind|problem/.test(s)){const b=NAC.filter(n=>n.status==='bad'),w=NAC.filter(n=>n.status==='warn');return (b.length?b.map(n=>n.id+' is delayed'+(n.obs?': '+n.obs:'')+'.').join(' '):'Nothing is delayed today.')+(w.length?' Also watch '+w.map(n=>n.id+(n.obs?' ('+n.obs+')':'')).join('; ')+'.':'')}
+  if(/alert/.test(s)){pendingArea='alert';return alertSummary(true)}
+  if(/produc|status|nacelle|line/.test(s)){pendingArea='prod';return prodSummary(true)}
   if(/schedul|agenda|today/.test(s)){pendingArea='crono';return 'Today: '+enItems(CRONO[0])+'.'}
   if(/message|chat/.test(s)){pendingArea='msg';return 'Opening messages.'}
   if(/what time|time is it/.test(s))return "It's "+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'.';
@@ -524,30 +524,45 @@ function sysPrompt(){
   'Para dados ao vivo da internet (temperatura, clima, cotação do dólar, notícias), diga com simpatia que neste protótipo você ainda não está conectada à internet e que na versão final vai buscar esse dado em tempo real; não invente números. '+
   'Para perguntas gerais de conhecimento, responda normalmente e de forma breve. Seja sempre cordial, calorosa e gentil: se o funcionário cumprimentar (bom dia, boa tarde, boa noite) ou disser como está, responda o cumprimento com simpatia antes de responder o resto.'+(LANG==='en'?' IMPORTANTE: o funcionário escolheu INGLÊS. Responda SEMPRE em inglês (en-US), curto e falado, traduzindo os dados das ferramentas.':'');
 }
+function prodSummary(en){
+  const bad=NAC.filter(n=>n.status==='bad'),warn=NAC.filter(n=>n.status==='warn');
+  if(en){let t='We have '+NAC.length+' nacelles on the line, at '+prodPct+'% of the weekly goal.';
+    if(bad.length)t+=' Delayed: '+bad.map(n=>n.id+(n.obs?' ('+n.obs+')':'')).join('; ')+'.';
+    if(warn.length)t+=' Needs attention: '+warn.map(n=>n.id+(n.obs?' ('+n.obs+')':'')).join('; ')+'.';
+    if(!bad.length&&!warn.length)t+=' Everything is on schedule.';else t+=' The others are on schedule.';return t}
+  let t='Temos '+NAC.length+' nacelles em linha, com '+prodPct+'% da meta da semana.';
+  if(bad.length)t+=' Atrasada'+(bad.length>1?'s':'')+': '+bad.map(n=>n.id+(n.obs?', '+n.obs.toLowerCase():'')).join('; ')+'.';
+  if(warn.length)t+=' Atenção para '+warn.map(n=>n.id+(n.obs?', '+n.obs.toLowerCase():'')).join('; ')+'.';
+  t+=(!bad.length&&!warn.length)?' Tudo está no prazo.':' As demais estão no prazo.';return t}
+function alertSummary(en){const a=ALERTAS.filter(x=>x.n!=='ok');
+  if(!a.length)return en?'There are no active alerts right now.':'Não há alertas ativos no momento.';
+  return en?'There '+(a.length>1?'are ':'is ')+a.length+' active alert'+(a.length>1?'s':'')+': '+a.map(x=>x.t+(x.p?', '+x.p:'')).join('; ')
+           :'Há '+a.length+' alerta'+(a.length>1?'s':'')+' ativo'+(a.length>1?'s':'')+': '+a.map(x=>x.t+(x.p?', '+x.p:'')).join('; ')}
+function tomorrowSummary(en){const c=CRONO.find(x=>x.d===1),items=c?c.itens:[];
+  const am=addD(1),dia=en?DAYS_EN[am.getDay()]:DIAS[am.getDay()].toLowerCase();
+  let t=en?(items.length?'For tomorrow, '+dia+', the schedule has: '+items.map(i=>i[0]+', '+(i[1]==='—'?'':i[1]+', ')+(EN_TXT[i[2]]||i[2])).join('; ')+'.':'There is nothing scheduled for tomorrow, '+dia+'.')
+          :(items.length?'Para amanhã, '+dia+', está programado: '+items.map(i=>i[0]+', '+(i[1]==='—'?'':i[1]+', ')+i[2]).join('; ')+'.':'Não há nada programado para amanhã, '+dia+'.');
+  const bad=NAC.filter(n=>n.status==='bad'),warn=NAC.filter(n=>n.status==='warn');
+  if(bad.length||warn.length){t+=en?' Points of attention: ':' Pontos de atenção: ';
+    t+=[...bad.map(n=>en?n.id+' is delayed'+(n.obs?' ('+n.obs+')':''):'a '+n.id+' está atrasada'+(n.obs?', '+n.obs.toLowerCase():'')),
+        ...warn.map(n=>en?n.id+' needs attention'+(n.obs?' ('+n.obs+')':''):'a '+n.id+' precisa de atenção'+(n.obs?', '+n.obs.toLowerCase():''))].join('; ')+'.'}
+  return t}
 function localAnswer(q){
   if(LANG==='en')return localAnswerEN(q);
   const s=q.toLowerCase();
-  if(/amanh/.test(s)&&/produ|atras|problem/.test(s))return demoAnswer();
-  if(/atras/.test(s)){const a=NAC.filter(n=>n.status==='bad');return a.length?a.map(n=>n.id+' está atrasada: '+n.obs+'.').join(' '):'Nada atrasado hoje.'}
-  if(/produ|status|nacelle/.test(s)){pendingArea='prod';return 'Temos '+NAC.length+' nacelles em linha, '+prodPct+'% da meta da semana. A N-106 está atrasada e a N-104 aguarda a qualidade.'}
-  if(/amanh/.test(s)){pendingArea='crono';return 'Amanhã: '+CRONO[1].itens.map(i=>i[0]+', '+i[1]+', '+i[2]).join('; ')+'.'}
-  if(/crono|hoje|agenda/.test(s)){pendingArea='crono';return 'Hoje: '+CRONO[0].itens.map(i=>i[0]+', '+i[1]+', '+i[2]).join('; ')+'.'}
-  if(/alert/.test(s)){pendingArea='alert';return 'Há 2 alertas ativos: N-106 atrasada e N-104 aguardando a qualidade.'}
-  if(/mensag|chat/.test(s)){pendingArea='msg';return 'Abrindo as mensagens.'}
-  if(/hora/.test(s))return 'Agora são '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'.';
-  if(/temperat|clima|tempo|d[oó]lar|cota/.test(s))return 'Neste protótipo ainda não estou conectada à internet. Na versão final, eu busco isso em tempo real para você.';
-  return 'Posso te ajudar com o cronograma, a produção, os alertas e as mensagens. O que você gostaria de saber?';
+  if(/temperat|clima|tempo|d[oó]lar|cota|not[ií]cia/.test(s))return 'Neste protótipo ainda não estou conectada à internet para isso. Na versão final, eu busco em tempo real para você.';
+  return quickFactory(q)||'Posso te ajudar com o cronograma, a produção, os alertas e as mensagens. O que você gostaria de saber?';
 }
 function quickFactory(q){
   if(LANG==='en')return quickAnswerEN(q);
   const s=q.toLowerCase();
   if(/d[oó]lar|temperat|clima|not[ií]cia|tempo (hoje|amanh)/.test(s))return null;
-  if(/amanh/.test(s)&&/produ|atras|problem|status|como est/.test(s))return demoAnswer();
+  if(/amanh/.test(s)&&/produ|atras|problem|status|como est/.test(s))return tomorrowSummary(false);
   if(/amanh/.test(s)&&/crono|agenda|program/.test(s)){pendingArea='crono';return 'Amanhã: '+CRONO[1].itens.map(i=>i[0]+', '+i[1]+', '+i[2]).join('; ')+'.'}
   if(/atras|problem/.test(s)){const a=NAC.filter(n=>n.status==='bad'),w=NAC.filter(n=>n.status==='warn');
     return (a.length?a.map(n=>'A '+n.id+' está atrasada: '+n.obs.toLowerCase()+'.').join(' '):'Nada atrasado hoje.')+(w.length?' Atenção também para '+w.map(n=>'a '+n.id+', '+n.obs.toLowerCase()).join('; ')+'.':'')}
-  if(/alerta/.test(s)){pendingArea='alert';return 'Há '+ALERTAS.filter(a=>a.n!=='ok').length+' alertas ativos: N-106 atrasada por vácuo instável e N-104 aguardando a qualidade.'}
-  if(/(produ|status|nacelle|linha)/.test(s)){pendingArea='prod';return 'Temos '+NAC.length+' nacelles em linha, com '+prodPct+'% da meta da semana. A N-106 está atrasada e a N-104 aguarda a liberação da qualidade. As demais estão no prazo.'}
+  if(/alerta/.test(s)){pendingArea='alert';return alertSummary(false)}
+  if(/(produ|status|nacelle|linha)/.test(s)){pendingArea='prod';return prodSummary(false)}
   if(/crono|agenda|hoje/.test(s)){pendingArea='crono';return 'Hoje: '+CRONO[0].itens.map(i=>i[0]+', '+i[1]+', '+i[2]).join('; ')+'.'}
   if(/mensag|chat/.test(s)){pendingArea='msg';return 'Abrindo as mensagens. A última é da Qualidade: '+MSGS[0].m}
   if(/^que horas|horas s[aã]o|que hora/.test(s))return 'Agora são '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'.';
@@ -836,6 +851,35 @@ function applyLang(){document.querySelectorAll('.flag').forEach(f=>f.classList.t
 document.querySelectorAll('.flag').forEach(f=>f.onclick=()=>{if(LANG===f.dataset.l)return;LANG=f.dataset.l;try{localStorage.setItem('turbineLang',LANG)}catch(e){}hist=[];SFX.tap();stopSpeak();applyLang();
   speak(LANG==='en'?"English selected. I'm ready.":'Português selecionado. Estou pronta.')});
 applyLang();
+
+/* ---------- Banco de dados na nuvem (Supabase) ---------- */
+const SB_URL='https://xxasbzfozhgjvugiajvt.supabase.co',SB_KEY='sb_publishable_vewOALKDkWzDIzu87tRKMA_U3p4AsW6';
+async function sbGet(t,q){const r=await fetch(SB_URL+'/rest/v1/'+t+'?'+(q||'select=*'),{headers:{apikey:SB_KEY}});if(!r.ok)throw new Error(t+' '+r.status);return r.json()}
+function hhmm(ts){try{return new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
+function dayDiff(iso){const [y,m,d]=iso.split('-').map(Number);const a=new Date(y,m-1,d),b=new Date();b.setHours(0,0,0,0);return Math.round((a-b)/86400000)}
+async function loadCloud(){
+  try{
+    const [nac,cro,al,ms]=await Promise.all([sbGet('nacelles','select=*&order=id.desc'),sbGet('cronograma','select=*&order=dia.asc,hora.asc'),
+      sbGet('alertas','select=*&order=criado_em.desc'),sbGet('mensagens','select=*&order=criado_em.desc&limit=30')]);
+    NAC.length=0;nac.forEach(n=>NAC.push({id:n.id,etapa:n.etapa||'',prog:n.progresso||0,status:n.status||'ok',prazo:n.prazo||'',resp:n.responsavel||'',obs:n.obs||undefined}));
+    CRONO.length=0;const g={};cro.forEach(c=>{const d=dayDiff(c.dia);if(d<0)return;(g[d]=g[d]||[]).push([c.hora||'',c.nacelle||'—',c.atividade||''])});
+    Object.keys(g).map(Number).sort((a,b)=>a-b).forEach(d=>CRONO.push({d,itens:g[d]}));
+    if(!CRONO.some(c=>c.d===0))CRONO.unshift({d:0,itens:[]});if(!CRONO.some(c=>c.d===1))CRONO.splice(1,0,{d:1,itens:[]});CRONO.sort((a,b)=>a.d-b.d);
+    ALERTAS.length=0;al.forEach(a=>ALERTAS.push({n:a.nivel||'warn',t:a.titulo||'',p:a.descricao||'',h:hhmm(a.criado_em)}));
+    MSGS.length=0;ms.forEach(m=>MSGS.push({a:(m.setor||'?').slice(0,2).toUpperCase(),n:m.setor||'',h:hhmm(m.criado_em),m:m.texto||''}));
+    prodPct=NAC.length?Math.round(NAC.reduce((a,n)=>a+n.prog,0)/NAC.length):0;
+    document.getElementById('prodPct').textContent=prodPct;document.getElementById('prodBar').style.width=prodPct+'%';
+    document.getElementById('nacN').textContent=NAC.length;
+    const act=ALERTAS.filter(a=>a.n!=='ok').length;
+    document.getElementById('alTxt').innerHTML='<span class="dot"></span> '+act+(act===1?' alerta ativo':' alertas ativos');
+    const bA=document.getElementById('badge-alert');if(bA){bA.textContent=act;bA.style.display=act?'':'none'}
+    const bM=document.getElementById('badge-msg');if(bM){bM.textContent=MSGS.length;bM.style.display=MSGS.length?'':'none'}
+    document.getElementById('dataSrc').textContent='● DADOS AO VIVO · ATUALIZADO '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('dataSrc').style.color='#35e09a';
+  }catch(e){/* sem acesso (ex.: dentro do Claude) — mantém dados de demonstração */}
+}
+loadCloud();setInterval(loadCloud,60000);
+
 /* capabilities */
 const hint=document.getElementById('hint');
 hint.textContent='Toque nas sugestões ou digite. No celular, use o microfone do teclado para falar.';
