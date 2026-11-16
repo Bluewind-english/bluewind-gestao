@@ -497,7 +497,7 @@ const VOICE={v:'rounded',r:.95};
 function talkDone(){if(vmOn&&vmMode==='talk')vmSet('idle',TX('TOQUE PARA FALAR DE NOVO'))}
 function speak(t,tries){
   if(!voiceOn){vInfo('🔇 Som desligado (botão 🔊)');setTimeout(talkDone,Math.min(12000,1500+t.length*55));return}
-  if(!tts){vInfo('🔇 Voz da Turbine indisponível nesta janela — use o app do Claude no computador ou o Chrome');setTimeout(talkDone,Math.min(12000,1500+t.length*55));return}
+  if(!tts){vInfo(LANG==='en'?'🔇 Voice unavailable on this device':'🔇 Voz indisponível neste aparelho');setTimeout(talkDone,Math.min(12000,1500+t.length*55));return}
   tries=tries||0;if(!tries)speakTok++;const tok=speakTok;
   if(listening){if(tries<20)setTimeout(()=>{if(tok===speakTok)speak(t,tries+1)},150);return}
   vInfo('🔊 Voz da Turbine');
@@ -507,7 +507,7 @@ function speak(t,tries){
     if(c!=='viewer_stopped')vInfo('🔇 A voz da Turbine não tocou ('+(c||'erro')+')');talkDone()});
 }
 
-function unlockAudio(){ac()}
+function unlockAudio(){ac();unlockDeviceVoice()}
 
 function stopSpeak(){speakTok++;try{tts&&tts.stop()}catch(e){}}
 
@@ -798,7 +798,7 @@ HUD(document.getElementById('hudMain'),{k:3.75,wave:1.0,glitter:220,label:true,s
 HUD(document.getElementById('vmCv'),{k:6,wave:1.35,glitter:420,label:false,space:true,center:()=>document.getElementById('vmOrb'),visible:()=>vm.classList.contains('open'),mode:()=>vmMode});
 function vmSet(mode,txt){vm.classList.toggle('live',mode==='live');vm.classList.toggle('talk',mode==='talk');vmSt.textContent=txt;
   vmMode=mode}
-function openVM(){SFX.turbine();vmOn=true;vm.classList.add('open');vmYou.textContent='';vmAns.textContent='';vmSet('idle',TX('MODO VOZ'));
+function openVM(){SFX.turbine();unlockDeviceVoice();vmOn=true;vm.classList.add('open');vmYou.textContent='';vmAns.textContent='';vmSet('idle',TX('MODO VOZ'));
   vmBtn.style.display=dict?'block':'none';vmBtn.textContent=TX('TOQUE E DIGA: "TURBINE…"')}
 function closeVM(){SFX.close();vmOn=false;vm.classList.remove('open');stopSpeak();if(dict&&listening){discard=true;dict.stop().catch(()=>{})}vmSet('idle',TX('MODO VOZ'))}
 document.getElementById('vmOpen').onclick=openVM;
@@ -815,6 +815,7 @@ async function vmHeard(raw){
 }
 function typeIn(el,txt,cb){let i=0;el.textContent='';const t=setInterval(()=>{el.textContent=txt.slice(0,++i);if(i>=txt.length){clearInterval(t);cb&&cb()}},55)}
 vmBtn.onclick=()=>{
+  unlockDeviceVoice();
   if(dict&&listening){clearTimeout(silT);dict.stop().catch(()=>{});return}
   if(dict){stopSpeak();finalTxt='';vmYou.textContent='';vmAns.textContent='';
     dict.start().catch(e=>{if(e&&e.code==='not_granted'){dict=null;vmBtn.textContent=TX('VER DEMONSTRAÇÃO')}vmSet('idle',TX('MICROFONE INDISPONÍVEL'))});return}
@@ -888,6 +889,49 @@ async function loadCloud(){
   }catch(e){/* sem acesso (ex.: dentro do Claude) — mantém dados de demonstração */}
 }
 loadCloud();setInterval(loadCloud,60000);
+
+
+/* ---------- Fora do Claude (GitHub): microfone e voz do próprio aparelho ---------- */
+function makeDeviceDictation(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;
+  let rec=null,cbP=()=>{},cbF=()=>{},cbS=()=>{},stopRes=null;
+  return {
+    start(){return new Promise((res,rej)=>{
+      try{rec=new SR()}catch(e){rej({code:'unavailable'});return}
+      rec.lang=LANG==='en'?'en-US':'pt-BR';rec.continuous=true;rec.interimResults=true;
+      rec.onstart=()=>{cbS({state:'listening'});res()};
+      rec.onresult=e=>{let part='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)cbF({text:r[0].transcript.trim()});else part+=r[0].transcript}
+        if(part)cbP({text:part.trim()})};
+      rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){rej({code:'not_granted'})}};
+      rec.onend=()=>{cbS({state:'idle',reason:'stopped'});if(stopRes){stopRes();stopRes=null}};
+      try{rec.start()}catch(e){rej({code:'unavailable'})}
+    })},
+    stop(){return new Promise(r=>{if(!rec){r();return}stopRes=r;try{rec.stop()}catch(e){r()}setTimeout(()=>{if(stopRes){stopRes();stopRes=null}},1500)})},
+    onPartial(f){cbP=f},onFinal(f){cbF=f},onState(f){cbS=f}
+  };
+}
+function makeDeviceTTS(){
+  if(!('speechSynthesis' in window))return null;
+  let cbS=()=>{};
+  function pickVoice(lang){const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.replace('_','-').toLowerCase().startsWith(lang));
+    return vs.find(v=>/luciana|felipe|google|premium|enhanced|natural/i.test(v.name))||vs[0]||null}
+  return {
+    speak(t){return new Promise((res,rej)=>{try{
+      const en=LANG==='en',u=new SpeechSynthesisUtterance(t);u.lang=en?'en-US':'pt-BR';u.rate=1;u.pitch=1;
+      const v=pickVoice(en?'en':'pt-br');if(v)u.voice=v;
+      u.onstart=()=>cbS({state:'speaking'});u.onend=()=>{cbS({state:'idle',reason:'completed'});res()};
+      u.onerror=e=>{cbS({state:'idle',reason:'error'});rej({code:e.error||'error'})};
+      speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){rej({code:'error'})}})},
+    stop(){try{speechSynthesis.cancel()}catch(e){}},
+    onState(f){cbS=f}
+  };
+}
+function unlockDeviceVoice(){try{if(!window.claude&&'speechSynthesis' in window&&!window.__vUnlocked){const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);window.__vUnlocked=true}}catch(e){}}
+if(!window.claude){
+  try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}catch(e){}
+  const dd=makeDeviceDictation();if(dd){dict=dd;hookDict();mic.style.display='flex';document.getElementById('hint').textContent=LANG==='en'?'Tap the mic and talk to Turbine, or type.':'Toque no microfone e fale com a Turbine, ou digite.'}
+  const dt=makeDeviceTTS();if(dt){tts=dt;dt.onState(({state})=>{if(!vmOn)return;if(state==='speaking'){if(vmMode!=='talk')vmSet('talk',TX('RESPONDENDO'))}else if(state==='idle'){talkDone()}})}
+}
 
 /* capabilities */
 const hint=document.getElementById('hint');
