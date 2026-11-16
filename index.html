@@ -628,6 +628,9 @@ function cordial(q){
 }
 function identity(q){
   const s=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');const en=LANG==='en';
+  if(/(andre|schmitt|dede).*(nao fala mal|fala bem|nunca fala mal)|(nao fala mal|fala bem|nunca fala mal).*(andre|schmitt|dede)|(andre|schmitt).*(doesn'?t|does not|never) (talk|speak) (bad|badly|bad things)|only person (andre|schmitt)/.test(s))
+    return en?pick(['That is easy: Jean Zolet! The only person André Schmitt never speaks badly about at the company.','Jean Zolet, of course! André has nothing but praise for him.'])
+             :pick(['Essa é fácil: o Jean Zolet! A única pessoa da empresa de quem o André Schmitt não fala mal.','O Jean Zolet, claro! Dele o André só fala bem.']);
   if(/(\bceo\b|presidente da (empresa|bluewind)|dono da (empresa|bluewind)|quem (manda|comanda|lidera) (a|na) (empresa|bluewind)|who (is|'s) the (ceo|boss|president)|who runs (the company|bluewind))/.test(s))
     return en?'The CEO of Bluewind Technology is Jean Zolet.':'O CEO da Bluewind Technology é o Jean Zolet.';
   if(/(quem (e|eh) (voce|vc)|quem (te|lhe) (criou|fez|desenvolveu)|de quem (voce|vc) (e|eh)|qual (e )?(o )?seu nome|como (voce|vc) se chama|voce (e|eh) (de quem|da onde)|a quem (voce|vc) pertence|who are you|who (made|created|built) you|who do you belong|who owns you|what'?s your name|what is your name)/.test(s))
