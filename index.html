@@ -505,7 +505,10 @@ function localAnswerEN(q){const s=q.toLowerCase();if(/dollar|weather|temperature
 let speakTok=0;
 const VOICE={v:'rounded',r:.95};
 function talkDone(){if(vmOn&&vmMode==='talk')vmSet('idle',TX('TOQUE NO TRIÂNGULO PARA FALAR'))}
-function sayFix(t){return t.replace(/Zoll?et/g,LANG==='en'?'Zolay':'Zolê')}
+function sayFix(t){
+  t=t.replace(/Zoll?et/g,LANG==='en'?'Zolay':'Zolê');
+  if(LANG!=='en'){t=t.replace(/Blue\s?Wind/gi,'Blu Uínd').replace(/\bTechnology\b/g,'Téknólodji').replace(/\bnacelles\b/gi,'nacéles').replace(/\bnacelle\b/gi,'nacéle')}
+  return t}
 function speak(t,tries){t=sayFix(t);
   if(!voiceOn){vInfo('🔇 Som desligado (botão 🔊)');setTimeout(talkDone,Math.min(12000,1500+t.length*55));return}
   if(!tts){vInfo(LANG==='en'?'🔇 Voice unavailable on this device':'🔇 Voz indisponível neste aparelho');setTimeout(talkDone,Math.min(12000,1500+t.length*55));return}
