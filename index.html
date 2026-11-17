@@ -740,15 +740,15 @@ mic.onclick=()=>{
   stopSpeak();finalTxt='';inp.value='';
   dict.start().catch(e=>{if(e&&e.code==='not_granted'){mic.style.display='none';dict=null}setState('Pronta para ajudar',false)});
 };
-let silT=null,listening=false,discard=false;
+let silT=null,listening=false,discard=false,lastPartial='';
 function armSilence(ms){if(!vmOn)return;clearTimeout(silT);silT=setTimeout(()=>{if(listening&&dict)dict.stop().catch(()=>{})},ms)}
 function hookDict(){
-  dict.onFinal(({text})=>{finalTxt=(finalTxt+' '+text).trim();if(vmOn){vmYou.textContent='“'+finalTxt+'”'}else inp.value=finalTxt;armSilence(4000)});
-  dict.onPartial(({text})=>{const t=(finalTxt+' '+text).trim();if(vmOn)vmYou.textContent=t;else inp.value=t;armSilence(4000)});
+  dict.onFinal(({text})=>{text=(text||'').trim();lastPartial='';if(!text||finalTxt.endsWith(text))return;finalTxt=(finalTxt+' '+text).trim();if(vmOn){vmYou.textContent='“'+finalTxt+'”'}else inp.value=finalTxt;armSilence(4000)});
+  dict.onPartial(({text})=>{lastPartial=(text||'').trim();const t=(finalTxt+' '+text).trim();if(vmOn)vmYou.textContent=t;else inp.value=t;armSilence(4000)});
   dict.onState(({state})=>{
     if(state==='listening'){listening=true;SFX.listen();if(vmOn){armSilence(6000);vmSet('live',TX('OUVINDO…'));vmBtn.textContent=TX('TOQUE PARA ENVIAR');return}mic.classList.add('live');setState('Ouvindo…',true)}
     else{listening=false;clearTimeout(silT);if(discard){discard=false;finalTxt='';mic.classList.remove('live');return}
-      vmBtn.textContent=TX('TOQUE NO TRIÂNGULO PARA FALAR');mic.classList.remove('live');setState('Pronta para ajudar',false);if(vmOn){const q=finalTxt;finalTxt='';if(q)vmSet('think',TX('PROCESSANDO…'));vmHeard(q);return}if(finalTxt){inp.value=finalTxt;finalTxt='';try{inp.focus()}catch(e){}}}
+      vmBtn.textContent=TX('TOQUE NO TRIÂNGULO PARA FALAR');mic.classList.remove('live');setState('Pronta para ajudar',false);if(vmOn){const q=(finalTxt+' '+lastPartial).trim();finalTxt='';lastPartial='';if(q)vmSet('think',TX('PROCESSANDO…'));vmHeard(q);return}if(finalTxt||lastPartial){inp.value=(finalTxt+' '+lastPartial).trim();finalTxt='';lastPartial='';try{inp.focus()}catch(e){}}}
   });
 }
 
@@ -875,7 +875,7 @@ function closeVM(){SFX.close();vmOn=false;vm.classList.remove('open');stopSpeak(
 document.getElementById('vmOpen').onclick=openVM;
 document.getElementById('hudMain').onclick=()=>openVM();document.getElementById('vmX').onclick=closeVM;
 document.getElementById('vmHome').onclick=closeVM;
-vm.addEventListener('click',e=>{if(e.target.closest('button'))return;if(!dict){vmSet('idle',TX('MICROFONE INDISPONÍVEL'));return}talkToggle()});
+vm.addEventListener('click',e=>{if(e.target.closest('button'))return;if(!dict){vmSet('idle',TX('MICROFONE INDISPONÍVEL'));return}if(vmMode==='think'||busy)return;talkToggle()});
 document.getElementById('vmType').onclick=()=>{closeVM();openTB()};
 async function vmHeard(raw){
   raw=(raw||'').trim();if(!raw){vmSet('idle',TX('NÃO ENTENDI — TOQUE DE NOVO'));return}
@@ -891,7 +891,7 @@ function talkToggle(){
   unlockDeviceVoice();
   if(!dict)return false;
   if(dict&&listening){clearTimeout(silT);dict.stop().catch(()=>{});return true}
-  if(dict){stopSpeak();finalTxt='';vmYou.textContent='';vmAns.textContent='';
+  if(dict){stopSpeak();finalTxt='';lastPartial='';vmYou.textContent='';vmAns.textContent='';
     dict.start().catch(e=>{if(e&&e.code==='not_granted'){dict=null;vmBtn.style.display='none'}vmSet('idle',TX('MICROFONE INDISPONÍVEL'))});return true}
   return false}
 vmBtn.onclick=()=>{
@@ -979,7 +979,7 @@ function makeDeviceDictation(){
       rec.onstart=()=>{cbS({state:'listening'});res()};
       rec.onresult=e=>{let part='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)cbF({text:r[0].transcript.trim()});else part+=r[0].transcript}
         if(part)cbP({text:part.trim()})};
-      rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){rej({code:'not_granted'})}};
+      rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){rej({code:'not_granted'})}else{try{rec.stop()}catch(_){}}};
       rec.onend=()=>{cbS({state:'idle',reason:'stopped'});if(stopRes){stopRes();stopRes=null}};
       try{rec.start()}catch(e){rej({code:'unavailable'})}
     })},
@@ -996,9 +996,11 @@ function makeDeviceTTS(){
     speak(t){return new Promise((res,rej)=>{try{
       const en=LANG==='en',u=new SpeechSynthesisUtterance(t);u.lang=en?'en-US':'pt-BR';u.rate=1;u.pitch=1;
       const v=pickVoice(en?'en':'pt-br');if(v)u.voice=v;
-      u.onstart=()=>cbS({state:'speaking'});u.onend=()=>{cbS({state:'idle',reason:'completed'});res()};
+      u.onstart=()=>cbS({state:'speaking'});
       u.onerror=e=>{cbS({state:'idle',reason:'error'});rej({code:e.error||'error'})};
-      speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){rej({code:'error'})}})},
+      let done=false;const fin=()=>{if(done)return;done=true;clearTimeout(guard);cbS({state:'idle',reason:'completed'});res()};
+      u.onend=fin;const guard=setTimeout(fin,3000+t.length*75);
+      speechSynthesis.cancel();setTimeout(()=>{try{speechSynthesis.speak(u)}catch(e){fin()}},350)}catch(e){rej({code:'error'})}})},
     stop(){try{speechSynthesis.cancel()}catch(e){}},
     onState(f){cbS=f}
   };
