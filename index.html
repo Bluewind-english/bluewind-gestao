@@ -253,7 +253,7 @@ img,svg,canvas{-webkit-user-drag:none;user-drag:none}
   <div class="orbit" id="orbit">
     <canvas class="hudcv" id="hudMain" style="cursor:pointer"></canvas>
     
-    <div class="core" id="core" title="Falar com a Turbine"><svg class="blades"><use href="#blades"/></svg></div>
+    <div class="core" id="core" title="Falar com o Eolus"><svg class="blades"><use href="#blades"/></svg></div>
     
   </div>
   <div class="demo" id="dataSrc">PROTÓTIPO · DADOS DE DEMONSTRAÇÃO</div>
@@ -270,7 +270,7 @@ img,svg,canvas{-webkit-user-drag:none;user-drag:none}
 <div class="tb" id="tb">
   <div class="tb-top">
     <div class="tb-orb" id="tbOrb"><svg><use href="#blades"/></svg></div>
-    <div class="tb-title"><b>TURBINE</b><div id="tbState">Pronta para ajudar</div></div>
+    <div class="tb-title"><b>EOLUS</b><div id="tbState">Pronto para ajudar</div></div>
     <button class="snd" id="snd" title="Voz ligada/desligada">🔊</button>
     <button class="x" id="tbX">✕</button>
   </div>
@@ -278,7 +278,7 @@ img,svg,canvas{-webkit-user-drag:none;user-drag:none}
   <div class="chips" id="chips"></div>
   <form class="bar2" id="form">
     <button type="button" class="vbtn" id="vmOpen" title="Modo voz"><svg viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></button>
-    <input id="inp" placeholder="Pergunte à Turbine…" autocomplete="off">
+    <input id="inp" placeholder="Pergunte ao Eolus…" autocomplete="off">
     <button type="button" class="rb mic" id="mic" style="display:none" title="Falar"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
     <button type="submit" class="rb" title="Enviar"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
   </form>
@@ -297,7 +297,7 @@ img,svg,canvas{-webkit-user-drag:none;user-drag:none}
   <button class="vm-btn" id="vmType" style="font-size:10px;padding:9px 16px;opacity:.85">⌨ DIGITAR PERGUNTA</button>
   <button class="vm-btn back-home" id="vmHome">‹ VOLTAR AO INÍCIO</button>
   <div id="vmVoice" style="font-size:13px;color:#7f9cc4;text-align:center;max-width:420px;min-height:18px"></div>
-  <button class="vm-btn" id="vmBtn" style="display:none">TOQUE E DIGA: "TURBINE…"</button>
+  <button class="vm-btn" id="vmBtn" style="display:none">TOQUE E DIGA: "EOLUS…"</button>
 </div>
 <script>
 /* ---------- Stars (espaço sideral) ---------- */
@@ -426,7 +426,7 @@ function openArea(k){
   }else if(k==='cfg'){
     h+='<div class="card"><h4>USUÁRIO</h4><p>André · Process Specialist<br>Acesso: Gestor (vê todas as áreas)</p></div>';
     h+='<div class="card"><h4>LOGIN</h4><p>Login individual · entrada por voz ou rosto (versão final)</p></div>';
-    h+='<div class="card"><h4>TURBINE</h4><p>Assistente de voz · idioma Português</p></div>';
+    h+='<div class="card"><h4>EOLUS</h4><p>Assistente de voz · Português e Inglês</p></div>';
   }
   document.getElementById('shTitle').textContent=a.n;document.getElementById('shBody').innerHTML=h;
   shade.classList.add('open');sheet.classList.add('open');SFX.open();document.getElementById('shBody').scrollTop=0;
@@ -463,7 +463,7 @@ document.addEventListener('pointerdown',()=>{if(!booted){booted=true;ac();SFX.bo
 const tb=document.getElementById('tb'),chat=document.getElementById('chat'),inp=document.getElementById('inp'),
       st=document.getElementById('tbState'),orb=document.getElementById('tbOrb'),core=document.getElementById('core');
 let sample=null,dict=null,tts=null,voiceOn=true,hist=[],busy=false,greeted=false;
-function openTB(){closeSheet();SFX.turbine();tb.classList.add('open');if(!greeted){greeted=true;addB('a','Olá! Eu sou a Turbine, a assistente de IA da Bluewind Technology. Posso mostrar o cronograma, o status da produção e os alertas. O que você precisa?')}}
+function openTB(){closeSheet();SFX.turbine();tb.classList.add('open');if(!greeted){greeted=true;addB('a','Olá! Eu sou o Eolus, o assistente de IA da Bluewind Technology. Posso mostrar o cronograma, o status da produção e os alertas. O que você precisa?')}}
 core.onclick=()=>openVM();document.querySelectorAll('[data-open=turbine]').forEach(e=>e.onclick=openTB);
 document.getElementById('tbX').onclick=()=>{SFX.close();tb.classList.remove('open');stopSpeak()};
 document.getElementById('snd').onclick=e=>{voiceOn=!voiceOn;sfxOn=voiceOn;e.currentTarget.textContent=voiceOn?'🔊':'🔇';if(!voiceOn)stopSpeak()};
@@ -476,9 +476,9 @@ let voiceInfo='';
 function vInfo(m){voiceInfo=m;const e=document.getElementById('vmVoice');if(e)e.textContent=m}
 let LANG='pt';try{LANG=localStorage.getItem('turbineLang')||'pt'}catch(e){}
 const TXM={'MODO VOZ':'VOICE MODE','OUVINDO…':'LISTENING…','PROCESSANDO…':'PROCESSING…','RESPONDENDO':'RESPONDING','TOQUE PARA FALAR DE NOVO':'TAP TO SPEAK AGAIN','TOQUE NO TRIÂNGULO':'TAP THE TRIANGLE',
- 'TOQUE PARA ENVIAR':'TAP TO SEND','TOQUE E DIGA: "TURBINE…"':'TAP AND SAY: "TURBINE…"','TOQUE NO TRIÂNGULO PARA FALAR':'TAP THE TRIANGLE TO SPEAK','NÃO ENTENDI — TOQUE DE NOVO':"DIDN'T CATCH THAT — TAP AGAIN",'PRONTA':'READY',
+ 'TOQUE PARA ENVIAR':'TAP TO SEND','TOQUE E DIGA: "EOLUS…"':'TAP AND SAY: "EOLUS…"','TOQUE NO TRIÂNGULO PARA FALAR':'TAP THE TRIANGLE TO SPEAK','NÃO ENTENDI — TOQUE DE NOVO':"DIDN'T CATCH THAT — TAP AGAIN",'PRONTO':'READY',
  'MICROFONE INDISPONÍVEL':'MICROPHONE UNAVAILABLE','VER DEMONSTRAÇÃO':'SEE DEMO','▶ DEMONSTRAÇÃO':'▶ DEMO','⌨ DIGITAR PERGUNTA':'⌨ TYPE A QUESTION','‹ VOLTAR AO INÍCIO':'‹ BACK TO HOME',
- 'Sim? Estou ouvindo.':"Yes? I'm listening.",'COMECE COM "TURBINE…"':'START WITH "TURBINE…"'};
+ 'Sim? Estou ouvindo.':"Yes? I'm listening.",'COMECE COM "EOLUS…"':'START WITH "EOLUS…"'};
 function TX(t){return LANG==='en'&&TXM[t]?TXM[t]:t}
 const EN_TXT={'Início do gel coat no molde 2':'gel coat start on mold 2','Verificação de vácuo / cura':'vacuum and cure check','Inspeção final da qualidade':'final quality inspection',
  'Acabamento – lixamento e retoque':'finishing, sanding and touch-up','Infusão – fechamento da bolsa':'infusion bag sealing','Desmoldagem':'demolding','Liberação para expedição':'release for shipping',
@@ -507,6 +507,7 @@ const VOICE={v:'rounded',r:.95};
 function talkDone(){if(vmOn&&vmMode==='talk')vmSet('idle',TX('TOQUE NO TRIÂNGULO PARA FALAR'))}
 function sayFix(t){
   t=t.replace(/Zoll?et/g,LANG==='en'?'Zolay':'Zolê');
+  t=t.replace(/\bEolus\b/g,LANG==='en'?'Eeolus':'Éolus');
   if(LANG!=='en'){t=t.replace(/Blue\s?Wind/gi,'Blu Uínd').replace(/\bTechnology\b/g,'Téknólodji').replace(/\bnacelles\b/gi,'nacéles').replace(/\bnacelle\b/gi,'nacéle')}
   return t}
 function speak(t,tries){t=sayFix(t);
@@ -514,11 +515,11 @@ function speak(t,tries){t=sayFix(t);
   if(!tts){vInfo(LANG==='en'?'🔇 Voice unavailable on this device':'🔇 Voz indisponível neste aparelho');setTimeout(talkDone,Math.min(12000,1500+t.length*55));return}
   tries=tries||0;if(!tries)speakTok++;const tok=speakTok;
   if(listening){if(tries<20)setTimeout(()=>{if(tok===speakTok)speak(t,tries+1)},150);return}
-  vInfo('🔊 Voz da Turbine');
+  vInfo('🔊 Voz do Eolus');
   tts.speak(t,LANG==='en'?{voice:VOICE.v,rate:1}:{language:'pt-BR',voice:VOICE.v,rate:VOICE.r}).catch(e=>{const c=e&&e.code;
     if((c==='busy'||c==='rate_limited')&&tries<12&&tok===speakTok){setTimeout(()=>{if(tok===speakTok)speak(t,tries+1)},c==='busy'?250:800);return}
     if(c==='not_granted')tts=null;
-    if(c!=='viewer_stopped')vInfo('🔇 A voz da Turbine não tocou ('+(c||'erro')+')');talkDone()});
+    if(c!=='viewer_stopped')vInfo('🔇 A voz do Eolus não tocou ('+(c||'erro')+')');talkDone()});
 }
 
 function unlockAudio(){ac();unlockDeviceVoice()}
@@ -539,12 +540,12 @@ const TOOLS=[
 let pendingArea=null;
 function sysPrompt(){
   const d=new Date();
-  return 'Você é a TURBINE, assistente de inteligência artificial de propriedade da Bluewind Technology, parte do sistema "BlueWind – Gestão de Dados" (a Bluewind fabrica nacelles de turbinas eólicas em compósitos). '+
-  'O CEO da Bluewind Technology é Jean Zolet. Você pertence à Bluewind e trabalha exclusivamente para a Bluewind e seus funcionários: fale da empresa como "nossa empresa" e "nossa fábrica". Se perguntarem quem você é, de quem você é ou quem te criou, responda que você é a Turbine, a assistente de IA da Bluewind Technology, feita para a Bluewind. Não fale de outras empresas como sua dona. '+
+  return 'Você é o EOLUS (nome inspirado em Éolo, o deus dos ventos), assistente de inteligência artificial (fale no masculino) de propriedade da Bluewind Technology, parte do sistema "BlueWind – Gestão de Dados" (a Bluewind fabrica nacelles de turbinas eólicas em compósitos). '+
+  'O CEO da Bluewind Technology é Jean Zolet. Você pertence à Bluewind e trabalha exclusivamente para a Bluewind e seus funcionários: fale da empresa como "nossa empresa" e "nossa fábrica". Se perguntarem quem você é, de quem você é ou quem te criou, responda que você é o Eolus, o assistente de IA da Bluewind Technology, feita para a Bluewind. Não fale de outras empresas como sua dona. '+
   'Agora: '+d.toLocaleString('pt-BR',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+'. Usuário logado: André (Process Specialist, acesso de gestor). '+
   'Responda SEMPRE em português do Brasil, curto e falado (no máximo 2 ou 3 frases, sem markdown, sem listas, sem emojis), pois a resposta será lida em voz alta. '+
   'Use as ferramentas para cronograma, produção, alertas e mensagens — nunca invente esses dados. Se o funcionário pedir para abrir/mostrar uma área, use abrir_area. '+
-  'Para dados ao vivo da internet (temperatura, clima, cotação do dólar, notícias), diga com simpatia que neste protótipo você ainda não está conectada à internet e que na versão final vai buscar esse dado em tempo real; não invente números. '+
+  'Para dados ao vivo da internet (temperatura, clima, cotação do dólar, notícias), diga com simpatia que neste protótipo você ainda não está conectado à internet e que na versão final vai buscar esse dado em tempo real; não invente números. '+
   'Para perguntas gerais de conhecimento, responda normalmente e de forma breve. Seja sempre cordial, calorosa e gentil: se o funcionário cumprimentar (bom dia, boa tarde, boa noite) ou disser como está, responda o cumprimento com simpatia antes de responder o resto.'+(LANG==='en'?' IMPORTANTE: o funcionário escolheu INGLÊS. Responda SEMPRE em inglês (en-US), curto e falado, traduzindo os dados das ferramentas.':'');
 }
 function prodSummary(en){
@@ -573,7 +574,7 @@ function tomorrowSummary(en){const c=CRONO.find(x=>x.d===1),items=c?c.itens:[];
 function localAnswer(q){
   if(LANG==='en')return localAnswerEN(q);
   const s=q.toLowerCase();
-  if(/temperat|clima|tempo|d[oó]lar|cota|not[ií]cia/.test(s))return 'Neste protótipo ainda não estou conectada à internet para isso. Na versão final, eu busco em tempo real para você.';
+  if(/temperat|clima|tempo|d[oó]lar|cota|not[ií]cia/.test(s))return 'Neste protótipo ainda não estou conectado à internet para isso. Na versão final, eu busco em tempo real para você.';
   return quickFactory(q)||'Posso te ajudar com o cronograma, a produção, os alertas e as mensagens. O que você gostaria de saber?';
 }
 function quickFactory(q){
@@ -593,7 +594,7 @@ function quickFactory(q){
 }
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 function cordial(q){
-  const s=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/^turbin[aeiou]?[,.!]?\s*/,'');
+  const s=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/^(turbin[aeiou]?|a?eol[ou]s?|eolo|iolus)[,.!]?\s*/,'');
   const h=new Date().getHours(),en=LANG==='en';
   const said={
     morning:/\b(bom dia|good morning)\b/.test(s),afternoon:/\b(boa tarde|good afternoon)\b/.test(s),evening:/\b(boa noite|good evening|good night)\b/.test(s),
@@ -610,7 +611,7 @@ function cordial(q){
   const tod=en?(h<12?'Good morning':h<18?'Good afternoon':'Good evening'):(h<12?'Bom dia':h<18?'Boa tarde':'Boa noite');
   if(said.bye){const night=said.evening||h>=18;
     out.push(en?(night?pick(['Good night, '+nm+'! Rest well, see you tomorrow.','Good night! Thank you for today, see you soon.']):pick(['See you soon, '+nm+'! Have a great rest of your day.','Bye for now! Take care.']))
-              :(night?pick(['Boa noite, '+nm+'! Descanse bem, até amanhã.','Boa noite! Obrigada pelo dia de hoje, até amanhã.']):pick(['Até logo, '+nm+'! Tenha um ótimo restante de dia.','Até mais! Se cuida.'])));
+              :(night?pick(['Boa noite, '+nm+'! Descanse bem, até amanhã.','Boa noite! Obrigado pelo dia de hoje, até amanhã.']):pick(['Até logo, '+nm+'! Tenha um ótimo restante de dia.','Até mais! Se cuida.'])));
     return out.join(' ')}
   if(said.morning||said.afternoon||said.evening){
     const g=en?(said.morning?'Good morning':said.afternoon?'Good afternoon':'Good evening'):(said.morning?'Bom dia':said.afternoon?'Boa tarde':'Boa noite');
@@ -620,13 +621,13 @@ function cordial(q){
   }else if(said.hi){out.push(en?pick(['Hi, '+nm+'! '+tod+'.','Hello, '+nm+'! Good to hear you.']):pick(['Oi, '+nm+'! '+tod+'.','Olá, '+nm+'! Que bom ouvir você.']))}
   const onlyGreet=(said.morning||said.afternoon||said.evening||said.hi)&&!said.how&&!said.fine&&!said.wish&&!said.thanks&&!said.ask;
   if(said.fine||said.wish){out.push(en?pick(["I'm so glad you're well! I'm doing great too, thank you for asking.","That's wonderful to hear! I'm doing very well too, thanks for the kind words.","Glad to hear it! I'm great as well, and ready to help."])
-             :pick(['Que bom que você está bem! Eu também estou ótima, obrigada pelo carinho.','Fico muito feliz em saber! Eu também estou bem, obrigada por desejar.','Que ótimo ouvir isso! Eu estou muito bem também, pronta para ajudar.']))}
+             :pick(['Que bom que você está bem! Eu também estou ótimo, obrigado pelo carinho.','Fico muito feliz em saber! Eu também estou bem, obrigado por desejar.','Que ótimo ouvir isso! Eu estou muito bem também, pronto para ajudar.']))}
   else if(said.how){out.push(en?pick(["I'm doing great, thank you! And you, how are you today?","All good here, thanks for asking! I hope you're doing well too.","I'm very well, thank you! How's your day going?"])
-             :pick(['Estou ótima, obrigada! E você, como está hoje?','Tudo bem por aqui, obrigada por perguntar! Espero que você também esteja bem.','Estou muito bem, obrigada! Como está o seu dia?']))}
+             :pick(['Estou ótimo, obrigado! E você, como está hoje?','Tudo bem por aqui, obrigado por perguntar! Espero que você também esteja bem.','Estou muito bem, obrigado! Como está o seu dia?']))}
   if(onlyGreet)out.push(en?pick(['How are you doing today?','How are you? How can I help you today?','How are you feeling today? I am here for whatever you need.'])
                           :pick(['Como você está hoje?','Como você está? Em que posso ajudar hoje?','Como está se sentindo hoje? Estou aqui para o que precisar.']));
   if(said.ask)out.push(en?pick(['Of course, '+nm+'! Go ahead and ask, I am listening.','Sure! I would be happy to help. What would you like to know?','Absolutely! Tell me your question, I am all ears.'])
-                        :pick(['Claro, '+nm+'! Pode perguntar, estou ouvindo.','Com certeza! Vou adorar ajudar. O que você gostaria de saber?','Claro que sim! Me diga a sua pergunta, sou toda ouvidos.']));
+                        :pick(['Claro, '+nm+'! Pode perguntar, estou ouvindo.','Com certeza! Vou adorar ajudar. O que você gostaria de saber?','Claro que sim! Me diga a sua pergunta, sou todo ouvidos.']));
   if(said.thanks)out.push(en?pick(["You're welcome! I'm always here for you.","My pleasure, "+nm+"!","Anytime! Count on me."]):pick(['Por nada! Estou sempre aqui para você.','Imagina, '+nm+', é um prazer ajudar!','De nada! Pode contar comigo sempre.']));
   if(!out.length)return null;
   const rest=s.replace(/\b(bom dia|boa tarde|boa noite|good (morning|afternoon|evening|night)|oi|ola|e ai|hey|hi|hello|tudo bem|tudo bom|how are you|obrigad\w*|valeu|thanks?( you)?)\b[,.!?]*/g,' ').replace(/\s+/g,' ').trim();
@@ -642,8 +643,8 @@ function identity(q){
   if(/(\bceo\b|presidente da (empresa|bluewind)|dono da (empresa|bluewind)|quem (manda|comanda|lidera) (a|na) (empresa|bluewind)|who (is|'s) the (ceo|boss|president)|who runs (the company|bluewind))/.test(s))
     return en?'The CEO of Bluewind Technology is Jean Zolet.':'O CEO da Bluewind Technology é o Jean Zolet.';
   if(/(quem (e|eh) (voce|vc)|quem (te|lhe) (criou|fez|desenvolveu)|de quem (voce|vc) (e|eh)|qual (e )?(o )?seu nome|como (voce|vc) se chama|voce (e|eh) (de quem|da onde)|a quem (voce|vc) pertence|who are you|who (made|created|built) you|who do you belong|who owns you|what'?s your name|what is your name)/.test(s))
-    return en?pick(["I'm Turbine, Bluewind Technology's artificial intelligence assistant. I belong to Bluewind and I'm here to help our team with schedules and production.","My name is Turbine. I'm Bluewind Technology's own AI assistant, part of the BlueWind Data Management system, made for our company."])
-             :pick(['Eu sou a Turbine, a assistente de inteligência artificial da Bluewind Technology. Pertenço à Bluewind e estou aqui para ajudar a nossa equipe com cronogramas e produção.','Meu nome é Turbine. Sou a assistente de IA própria da Bluewind Technology, parte do sistema BlueWind Gestão de Dados, feita para a nossa empresa.']);
+    return en?pick(["I'm Eolus, Bluewind Technology's artificial intelligence assistant, named after Aeolus, the god of the winds. I belong to Bluewind and I'm here to help our team with schedules and production.","My name is Eolus, after the god of the winds. I'm Bluewind Technology's own AI assistant, part of the BlueWind Data Management system, made for our company."])
+             :pick(['Eu sou o Eolus, o assistente de inteligência artificial da Bluewind Technology. Pertenço à Bluewind e estou aqui para ajudar a nossa equipe com cronogramas e produção.','Meu nome é Eolus, como Éolo, o deus dos ventos. Sou o assistente de IA próprio da Bluewind Technology, parte do sistema BlueWind Gestão de Dados, feita para a nossa empresa.']);
   return null}
 
 /* ---------- Camada 1: dados do dia a dia (serviços públicos gratuitos) ---------- */
@@ -656,7 +657,7 @@ const WMO_PT={0:'céu limpo',1:'predominantemente limpo',2:'parcialmente nublado
 const WMO_EN={0:'clear skies',1:'mostly clear',2:'partly cloudy',3:'cloudy',45:'fog',48:'fog',51:'light drizzle',53:'drizzle',55:'heavy drizzle',61:'light rain',63:'rain',65:'heavy rain',66:'freezing rain',67:'freezing rain',71:'light snow',73:'snow',75:'heavy snow',80:'rain showers',81:'rain showers',82:'heavy rain showers',95:'thunderstorms',96:'thunderstorms with hail',99:'thunderstorms with hail'};
 const fmtBR=(n,d)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const cToF=c=>Math.round(c*9/5+32);
-function greetingFor(q){const m=q.match(/^\s*(?:turbine[,.!]?\s*)?(bom dia|boa tarde|boa noite|good morning|good afternoon|good evening|ol[aá]|oi|hello|hi)\b/i);if(!m)return '';
+function greetingFor(q){const m=q.match(/^\s*(?:(?:turbine|a?[eé]ol[ou]s?|[eé]olo|iolus)[,.!]?\s*)?(bom dia|boa tarde|boa noite|good morning|good afternoon|good evening|ol[aá]|oi|hello|hi)\b/i);if(!m)return '';
   const c=cordial(m[1]);return typeof c==='string'?c.replace(/\s*(Como (você )?est[aá][^.?!]*[.?!]|How are you[^.?!]*[.?!]|How are you feeling[^.?!]*[.?!])\s*(Estou aqui para o que precisar\.|Em que posso ajudar hoje\?|How can I help you today\?|I am here for whatever you need\.)?/g,'').trim():''}
 const HOL_PT={"New Year's Day":'Ano Novo','Martin Luther King, Jr. Day':'Dia de Martin Luther King',"Washington's Birthday":'Dia dos Presidentes','Memorial Day':'Memorial Day','Juneteenth National Independence Day':'Juneteenth','Independence Day':'Dia da Independência','Labour Day':'Dia do Trabalho','Labor Day':'Dia do Trabalho','Columbus Day':'Dia de Colombo','Veterans Day':'Dia dos Veteranos','Thanksgiving Day':'Dia de Ação de Graças','Christmas Day':'Natal'};
 async function liveAnswer(q){
@@ -707,7 +708,7 @@ async function ask(q){
   try{
     if(qa){ans=qa}
     else if(sample){
-      const msgs=[{role:'user',content:sysPrompt()},{role:'assistant',content:'Entendido. Sou a Turbine.'},...hist.slice(-8),{role:'user',content:q}];
+      const msgs=[{role:'user',content:sysPrompt()},{role:'assistant',content:'Entendido. Sou o Eolus.'},...hist.slice(-8),{role:'user',content:q}];
       const ctl=new AbortController();askCtl=ctl;let timedOut=false;
       const to=setTimeout(()=>{timedOut=true;try{ctl.abort()}catch(e){}},6000);
       try{
@@ -726,7 +727,7 @@ async function ask(q){
     vInfo(LANG==='en'?'⚠ AI unavailable now ('+((e&&e.code)||'timeout')+') — quick answer used':'⚠ IA indisponível agora ('+((e&&e.code)||'tempo esgotado')+') — usei a resposta rápida');
   }
   b.textContent=ans;hist.push({role:'user',content:q},{role:'assistant',content:ans});
-  setState('Pronta para ajudar',false);SFX.reply();speak(ans);busy=false;
+  setState('Pronto para ajudar',false);SFX.reply();speak(ans);busy=false;
   if(pendingArea){const a=pendingArea;pendingArea=null;if(!vmOn)setTimeout(()=>{openArea(a)},900)}
   return ans;
 }
@@ -738,7 +739,7 @@ mic.onclick=()=>{
   if(!dict)return;
   if(mic.classList.contains('live')){dict.stop().catch(()=>{});return}
   stopSpeak();finalTxt='';inp.value='';
-  dict.start().catch(e=>{if(e&&e.code==='not_granted'){mic.style.display='none';dict=null}setState('Pronta para ajudar',false)});
+  dict.start().catch(e=>{if(e&&e.code==='not_granted'){mic.style.display='none';dict=null}setState('Pronto para ajudar',false)});
 };
 let silT=null,listening=false,discard=false,lastPartial='';
 function armSilence(ms){if(!vmOn)return;clearTimeout(silT);silT=setTimeout(()=>{if(listening&&dict)dict.stop().catch(()=>{})},ms)}
@@ -748,7 +749,7 @@ function hookDict(){
   dict.onState(({state})=>{
     if(state==='listening'){listening=true;SFX.listen();if(vmOn){armSilence(6000);vmSet('live',TX('OUVINDO…'));vmBtn.textContent=TX('TOQUE PARA ENVIAR');return}mic.classList.add('live');setState('Ouvindo…',true)}
     else{listening=false;clearTimeout(silT);if(discard){discard=false;finalTxt='';mic.classList.remove('live');return}
-      vmBtn.textContent=TX('TOQUE NO TRIÂNGULO PARA FALAR');mic.classList.remove('live');setState('Pronta para ajudar',false);if(vmOn){const q=(finalTxt+' '+lastPartial).trim();finalTxt='';lastPartial='';if(q)vmSet('think',TX('PROCESSANDO…'));vmHeard(q);return}if(finalTxt||lastPartial){inp.value=(finalTxt+' '+lastPartial).trim();finalTxt='';lastPartial='';try{inp.focus()}catch(e){}}}
+      vmBtn.textContent=TX('TOQUE NO TRIÂNGULO PARA FALAR');mic.classList.remove('live');setState('Pronto para ajudar',false);if(vmOn){const q=(finalTxt+' '+lastPartial).trim();finalTxt='';lastPartial='';if(q)vmSet('think',TX('PROCESSANDO…'));vmHeard(q);return}if(finalTxt||lastPartial){inp.value=(finalTxt+' '+lastPartial).trim();finalTxt='';lastPartial='';try{inp.focus()}catch(e){}}}
   });
 }
 
@@ -879,10 +880,10 @@ vm.addEventListener('click',e=>{if(e.target.closest('button'))return;if(!dict){v
 document.getElementById('vmType').onclick=()=>{closeVM();openTB()};
 async function vmHeard(raw){
   raw=(raw||'').trim();if(!raw){vmSet('idle',TX('NÃO ENTENDI — TOQUE DE NOVO'));return}
-  const m=raw.match(/turb[iaeu]n[ae]?[,.!]?\s*(.*)/i);
+  const m=raw.match(/(?:turb[iaeu]n[ae]?|a?[eé]ol[ou]s?|[eé]olo|iolus|e olos)[,.!]?\s*(.*)/i);
   const q0=m?(m[1]||'').trim():raw;
   if(!m){vmYou.textContent='“'+raw+'”';vmSet('think',TX('PROCESSANDO…'));vmAns.textContent='';const an=await ask(raw);if(!vmOn)return;vmAns.textContent=an||'';vmSet('talk',TX('RESPONDENDO'));return}
-  const q=(m[1]||'').trim();if(!q){SFX.reply();vmAns.textContent=TX('Sim? Estou ouvindo.');vmSet('idle',TX('PRONTA'));speak(TX('Sim? Estou ouvindo.'));return}
+  const q=(m[1]||'').trim();if(!q){SFX.reply();vmAns.textContent=TX('Sim? Estou ouvindo.');vmSet('idle',TX('PRONTO'));speak(TX('Sim? Estou ouvindo.'));return}
   vmYou.textContent='“'+raw+'”';vmSet('think',TX('PROCESSANDO…'));vmAns.textContent='';
   const ans=await ask(q);if(!vmOn)return;vmAns.textContent=ans||'';vmSet('talk',TX('RESPONDENDO'));
 }
@@ -897,7 +898,7 @@ function talkToggle(){
 vmBtn.onclick=()=>{
   if(talkToggle())return;
   // demonstração (celular): simula a fala
-  const demos=['Turbine, como está a produção?','Turbine, o que está atrasado hoje?','Turbine, cronograma de amanhã','Turbine, quanto está o dólar?'];
+  const demos=['Eolus, como está a produção?','Eolus, o que está atrasado hoje?','Eolus, cronograma de amanhã','Eolus, quanto está o dólar?'];
   const d=demos[(vmBtn._i=(vmBtn._i||0)+1)%demos.length];
   SFX.listen();vmAns.textContent='';vmSet('live',TX('OUVINDO…'));
   setTimeout(()=>typeIn(vmYou,d,()=>setTimeout(()=>{vmYou.textContent='“'+d+'”';vmHeard(d)},500)),600);
@@ -916,7 +917,7 @@ function demoAnswer(){
 let demoRun=false;
 document.getElementById('vmDemo').onclick=()=>{
   if(demoRun)return;demoRun=true;stopSpeak();unlockAudio();
-  const q=LANG==='en'?"Turbine, how is tomorrow's production?":'Turbine, como está a produção de amanhã?',ans=demoAnswer();
+  const q=LANG==='en'?"Eolus, how is tomorrow's production?":'Eolus, como está a produção de amanhã?',ans=demoAnswer();
   vmAns.textContent='';vmYou.textContent='';SFX.listen();vmSet('live',TX('OUVINDO…'));
   setTimeout(()=>{(()=>{
     vmYou.textContent='“'+q+'”';SFX.think();vmSet('think',TX('PROCESSANDO…'));
@@ -934,9 +935,9 @@ document.getElementById('vmDemo').onclick=()=>{
 function applyLang(){document.querySelectorAll('.flag').forEach(f=>f.classList.toggle('on',f.dataset.l===LANG));
   document.getElementById('vmDemo').textContent=TX('▶ DEMONSTRAÇÃO');document.getElementById('vmType').textContent=TX('⌨ DIGITAR PERGUNTA');document.getElementById('vmHome').textContent=TX('‹ VOLTAR AO INÍCIO');
   if(!listening)vmBtn.textContent=TX('TOQUE NO TRIÂNGULO PARA FALAR');if(vmMode==='idle')vmSt.textContent=TX('MODO VOZ');
-  inp.placeholder=LANG==='en'?'Ask Turbine…':'Pergunte à Turbine…'}
+  inp.placeholder=LANG==='en'?'Ask Eolus…':'Pergunte ao Eolus…'}
 document.querySelectorAll('.flag').forEach(f=>f.onclick=()=>{if(LANG===f.dataset.l)return;LANG=f.dataset.l;try{localStorage.setItem('turbineLang',LANG)}catch(e){}hist=[];SFX.tap();stopSpeak();applyLang();
-  speak(LANG==='en'?"English selected. I'm ready.":'Português selecionado. Estou pronta.')});
+  speak(LANG==='en'?"English selected. I'm ready.":'Português selecionado. Estou pronto.')});
 applyLang();
 
 /* ---------- Banco de dados na nuvem (Supabase) ---------- */
@@ -1008,7 +1009,7 @@ function makeDeviceTTS(){
 function unlockDeviceVoice(){try{if(!window.claude&&'speechSynthesis' in window&&!window.__vUnlocked){const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);window.__vUnlocked=true}}catch(e){}}
 if(!window.claude){
   try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}catch(e){}
-  const dd=makeDeviceDictation();if(dd){dict=dd;hookDict();mic.style.display='flex';document.getElementById('hint').textContent=LANG==='en'?'Tap the mic and talk to Turbine, or type.':'Toque no microfone e fale com a Turbine, ou digite.'}
+  const dd=makeDeviceDictation();if(dd){dict=dd;hookDict();mic.style.display='flex';document.getElementById('hint').textContent=LANG==='en'?'Tap the mic and talk to Eolus, or type.':'Toque no microfone e fale com o Eolus, ou digite.'}
   const dt=makeDeviceTTS();if(dt){tts=dt;dt.onState(({state})=>{if(!vmOn)return;if(state==='speaking'){if(vmMode!=='talk')vmSet('talk',TX('RESPONDENDO'))}else if(state==='idle'){talkDone()}})}
 }
 
@@ -1043,7 +1044,7 @@ if(window.claude&&claude.use){
   claude.use('tts').then(t=>{tts=t;if(t&&t.onState)t.onState(({state})=>{if(!vmOn)return;
     if(state==='speaking'){if(vmMode!=='talk')vmSet('talk',TX('RESPONDENDO'))}
     else if(state==='idle'){talkDone()}})}).catch(()=>{});
-  claude.use('dictation').then(d=>{if(d){dict=d;hookDict();mic.style.display='flex';hint.textContent='Toque no microfone e fale com a Turbine, ou digite.'}}).catch(()=>{});
+  claude.use('dictation').then(d=>{if(d){dict=d;hookDict();mic.style.display='flex';hint.textContent='Toque no microfone e fale com o Eolus, ou digite.'}}).catch(()=>{});
 }
 </script>
 </body>
