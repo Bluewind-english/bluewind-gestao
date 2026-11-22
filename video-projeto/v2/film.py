@@ -1,13 +1,13 @@
 import json,base64,sys,subprocess,os
 from playwright.sync_api import sync_playwright
 exec(open('lines.py').read());dur=json.load(open('dur.json'))
-start={'e1':3.6,'e2':11.6,'o2':18.6,'e8':21.0,'o3':28.6,'e9':31.0,'o4':35.0,'e10':36.8,'o1':43.0,'e3':45.6,'e4':58.2,'e5':69.4,'o5':82.6,'e11':85.0,'e12':104.6,'e13':113.4,'e14':120.0,'e7':133.0}
-C={'intro':0,'asm':8,'daily':17.5,'prod':42,'feat':57,'net':68,'cam':81.5,'call':99.5,'safety':112.0,'close':131.0};END=141.5
+start={'e1':3.6,'e2':11.6,'o2':18.6,'e8':21.0,'o3':28.6,'e9':31.0,'o4':35.0,'e10':36.8,'o1':43.0,'e3':45.6,'e4':58.2,'e5':69.4,'o5':82.6,'e11':85.0,'e12':104.6,'e13':113.4,'e14':120.0,'e15':134.2,'e16':145.6,'e7':159.8}
+C={'intro':0,'asm':8,'daily':17.5,'prod':42,'feat':57,'net':68,'cam':81.5,'call':99.5,'safety':112.0,'ann':131.0,'emer':142.8,'close':157.8};END=168.3
 voice=[{'id':k,'who':w,'t':start[k],'d':dur[k],'sub':sub} for k,w,_,sub in L]
-order=['intro','asm','daily','prod','feat','net','cam','call','safety','close']
+order=['intro','asm','daily','prod','feat','net','cam','call','safety','ann','emer','close']
 b64=lambda f:'data:image/webp;base64,'+base64.b64encode(open(f,'rb').read()).decode()
 G='/home/claude/bluewind-gestao/video-projeto/img/'
-img={k:b64(G+k+('_a' if k=='eolus' else '')+'.webp') for k in ['eolus','blades','logotext','horizons','connecting']}
+img={k:b64(G+k+'.webp') for k in ['blades','logotext','horizons','connecting']};img['eolus']=b64('/tmp/eolus2_a.webp')
 data={'C':C,'end':END,'voice':voice,'img':img}
 json.dump({'voice':voice,'C':C,'end':END,'order':order},open('timeline.json','w'))
 if __name__=='__main__':

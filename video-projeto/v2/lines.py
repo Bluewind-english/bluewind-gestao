@@ -17,5 +17,7 @@ L=[
 ('e12','e',"Tyler, this is Eolus. Vacuum pump number three is failing on the infusion line. Please check it now.","Tyler, this is Eolus. Vacuum pump #3 is failing on the infusion line. Please check it now."),
 ('e13','e',"Safety alert! A worker is at height without a harness.","Safety alert! A worker is at height without a harness."),
 ('e14','e',"Mike, this is Eolus. A worker is on top of a wind turbine nacelle without a safety harness. Fall protection is required. Please act now.","Mike, this is Eolus. A worker is on top of a wind turbine nacelle without a safety harness. Fall protection is required. Please act now."),
+('e15','e',"Attention, Blue Wind team. Our weekly Safety Meeting starts at ten thirty, in the main hall. Please join us.","Attention, BlueWind team. Our weekly Safety Meeting starts at 10:30, in the main hall. Please join us."),
+('e16','e',"Emergency! Fire detected in the resin storage area. Evacuate now through the nearest exit, and go to the assembly point. Emergency services have been called. This is not a drill.","Emergency! Fire detected in the resin storage area. Evacuate now through the nearest exit and go to the assembly point. Emergency services have been called. This is not a drill."),
 ('e7','e',"Blue Wind. Connecting processes and people. The next phase starts now.","BlueWind. Connecting processes and people. The next phase starts now."),
 ]
