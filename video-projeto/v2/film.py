@@ -7,8 +7,8 @@ voice=[{'id':k,'who':w,'t':start[k],'d':dur[k],'sub':sub} for k,w,_,sub in L]
 order=['intro','asm','daily','prod','feat','net','cam','call','safety','ann','emer','close']
 b64=lambda f:'data:image/webp;base64,'+base64.b64encode(open(f,'rb').read()).decode()
 G='/home/claude/bluewind-gestao/video-projeto/img/'
-img={k:b64(G+k+'.webp') for k in ['blades','logotext','horizons','connecting']};img['eolus']=b64('/tmp/eolus3_a.webp')
-data={'C':C,'end':END,'voice':voice,'img':img}
+img={k:b64(G+k+'.webp') for k in ['blades','logotext','horizons','connecting']};img['eolus']=b64('/home/claude/layers/clean.webp');img['head']=b64('/home/claude/layers/head.webp');img['body']=b64('/home/claude/layers/body.webp')
+data={'C':C,'end':END,'voice':voice,'img':img,'specks':json.load(open('/home/claude/layers/specks.json'))}
 json.dump({'voice':voice,'C':C,'end':END,'order':order},open('timeline.json','w'))
 if __name__=='__main__':
     mode=sys.argv[1]

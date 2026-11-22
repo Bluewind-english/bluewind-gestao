@@ -128,7 +128,30 @@ function eEmit(c,E,OX,OY,DW,DH,t,amp,ia,L){if(!E||!E.length||ia<=0)return;const 
     if(k%4===0){const s=(2+(k%3))*L;c.save();c.translate(X,Y);c.rotate(u*4+k);c.fillRect(-s,-s*.4,s*2,s*.8);c.restore()}else{const s=(1.2+(k%3)*.7)*L;c.fillRect(X-s/2,Y-s/2,s,s)}}
   c.globalAlpha=1}
 
-let EP=null,EW=0,EH=0,EE=null;
+/* Eolus: movimentos humanos (cabeça, respiração) + pontinhos soltos flutuando */
+function ePose(t,amp){return{tilt:.042*Math.sin(t*.45)+.02*Math.sin(t*1.17+1)+.04*amp*Math.sin(t*2.7),
+  nod:2.5*Math.sin(t*.8+.5)+amp*6*Math.sin(t*4.1),yaw:7*Math.sin(t*.33),breath:.011*Math.sin(t*1.05)+amp*.006}}
+function eHuman(c,I,SPK,OX,OY,DW,DH,t,talk,live,ia){
+  const k=DH/1000,p=ePose(t,talk),px=OX+.55*DW,by=OY+DH,hy=OY+.45*DH,s=1+p.breath;
+  const lift=-(s-1)*DH*.55,hdx=p.yaw*k,hdy=p.nod*k+lift;
+  const drawLayers=(al)=>{
+    c.globalAlpha=al;c.save();c.translate(px,by);c.scale(1+(s-1)*.35,s);c.translate(-px,-by);c.drawImage(I.body,OX,OY,DW,DH);c.restore();
+    c.save();c.translate(px+hdx,hy+hdy);c.rotate(p.tilt);c.scale(1-Math.abs(p.yaw)*.0025,1);c.translate(-px,-hy);c.drawImage(I.head,OX,OY,DW,DH);
+    if(talk>.02&&al===ia){const fx=OX+.55*DW,fy=OY+.27*DH,g=c.createRadialGradient(fx,fy,0,fx,fy,DW*.28);
+      g.addColorStop(0,'hsla('+(95-talk*10)+',100%,'+(60+talk*12)+'%,'+(.95*talk*ia)+')');g.addColorStop(.6,'hsla(100,100%,50%,'+(.35*talk*ia)+')');g.addColorStop(1,'hsla(100,100%,45%,0)');
+      c.globalAlpha=1;c.fillStyle=g;c.fillRect(fx-DW*.3,fy-DW*.3,DW*.6,DW*.6)}
+    c.restore()};
+  drawLayers(ia);if(live>.02)drawLayers(ia*live*.45);
+  // pontinhos soltos flutuando em volta
+  if(SPK)for(let i=0;i<SPK.length;i++){const q=SPK[i],sp=.35+(i%7)*.08,r=(4+(i%5)*2.5)*k*(1+talk*.8);
+    let X=OX+q[0]*DW+Math.sin(t*sp+i*1.7)*r,Y=OY+q[1]*DH+Math.cos(t*sp*.8+i)*r*.8;
+    if(q[1]<.47){X+=hdx+(Y-hy)*-p.tilt;Y+=hdy}
+    const ex=X-px,ey=Y-(OY+.35*DH);X+=ex*talk*.06;Y+=ey*talk*.06;
+    c.globalAlpha=Math.min(1,q[4]*ia*(.55+.45*Math.sin(t*2.2+i*2.3)));c.fillStyle='rgb('+q[3].join(',')+')';
+    const z=Math.max(1.2,q[2]*k*1.3);if(i%3===0){c.save();c.translate(X,Y);c.rotate(t*.4+i);c.fillRect(-z,-z*.45,z*2,z*.9);c.restore()}else c.fillRect(X-z/2,Y-z/2,z,z)}
+  c.globalAlpha=1}
+
+let EP=null,EW=0,EH=0,EE=null,SPK=null;
 function buildPts(){const im=IMG.eolus;EW=im.naturalWidth;EH=im.naturalHeight;EE=eEdges(im,EW,EH);const sw=240,sh=Math.round(sw*EH/EW),oc=document.createElement('canvas');oc.width=sw;oc.height=sh;
   const o=oc.getContext('2d');o.drawImage(im,0,0,sw,sh);const d=o.getImageData(0,0,sw,sh).data,r=rng(3);EP=[];
   for(let y=0;y<sh;y++)for(let xx=0;xx<sw;xx++){const i=(y*sw+xx)*4,al=d[i+3]/255,R=d[i]*al,G=d[i+1]*al,B=d[i+2]*al,br=Math.max(R,G,B);
@@ -147,17 +170,14 @@ function drawEolus(t,cx,cy,h,asm,alpha=1,out=0){if(!EP||alpha<=0)return 1;
   const DH=h,DW=DH*EW/EH,OX=cx-DW/2,OY=cy-DH/2,v=voiceAmp(t),amp=v.a,mode=v.who==='e'?'talk':v.who==='o'?'live':'idle';
   const T=asm==null?99:t-asm;x.globalCompositeOperation='lighter';
   const ia=ease((T-2.6)/1.4)*alpha*(1-out);
-  if(ia>0){const ta=mode==='talk'?amp:mode==='live'?amp*.5:0;eAura(x,OX,OY,DW,DH,t,ta,ia);eRings(x,OX+.55*DW,OY+.27*DH,DW,t,mode==='talk'?amp:0,ia,1);const br=1+Math.sin(t*1.2)*.006+ta*.008,sw=Math.sin(t*.7)*.006+Math.sin(t*2.3)*.01*ta,px=OX+.551*DW,py=OY+DH;x.save();x.translate(px,py);x.rotate(sw);x.scale(br,br);x.translate(-px,-py);x.globalAlpha=ia;eWarp(x,IMG.eolus,EW,EH,OX,OY,DW,DH,t,1.2+ta*4.5);
-    const fx=OX+.55*DW,fy=OY+.27*DH;
-    if(mode==='talk'){const sx0=.35,sx1=.75,sy0=.13,sy1=.4,n=40;for(let k=0;k<n;k++){const v0=sy0+(sy1-sy0)*k/n,hh=(sy1-sy0)/n,dx=Math.sin(k*.9+t*14)*6*amp;x.globalAlpha=ia*amp*.6;
-        x.drawImage(IMG.eolus,sx0*EW,v0*EH,(sx1-sx0)*EW,hh*EH+1,OX+sx0*DW+dx,OY+v0*DH,(sx1-sx0)*DW,hh*DH+1)}
-      x.globalAlpha=ia;const g=x.createRadialGradient(fx,fy,0,fx,fy,DW*.28);g.addColorStop(0,'hsla('+(95-amp*10)+',100%,'+(60+amp*12)+'%,'+(.95*amp)+')');g.addColorStop(.6,'hsla(100,100%,50%,'+(.35*amp)+')');g.addColorStop(1,'hsla(100,100%,45%,0)');x.fillStyle=g;x.fillRect(fx-DW*.3,fy-DW*.3,DW*.6,DW*.6)}
-    if(mode==='live'){const k=1.012+amp*.01;x.globalAlpha=ia*amp*.55;x.translate(cx,cy);x.scale(k,k);x.translate(-cx,-cy);x.drawImage(IMG.eolus,OX,OY,DW,DH)}
-    x.restore();const bx=OX+.551*DW,by=OY+.703*DH,g2=x.createRadialGradient(bx,by,0,bx,by,DW*.16);g2.addColorStop(0,'rgba(200,240,255,'+((.3+.15*Math.sin(t*2.5)+amp*.3)*ia)+')');g2.addColorStop(1,'rgba(40,120,255,0)');x.globalAlpha=1;x.fillStyle=g2;x.fillRect(bx-DW*.2,by-DW*.2,DW*.4,DW*.4);eEmit(x,EE,OX,OY,DW,DH,t,mode==='talk'?amp:mode==='live'?amp*.4:0,ia,1)}
+  if(ia>0){const ta=mode==='talk'?amp:mode==='live'?amp*.5:0;eAura(x,OX,OY,DW,DH,0,ta,ia);
+    eHuman(x,IMG,SPK,OX,OY,DW,DH,t,mode==='talk'?amp:0,mode==='live'?amp:0,ia);
+    const bx=OX+.551*DW,by=OY+.703*DH,g2=x.createRadialGradient(bx,by,0,bx,by,DW*.16);g2.addColorStop(0,'rgba(200,240,255,'+((.3+.15*Math.sin(t*2.5)+amp*.3)*ia)+')');g2.addColorStop(1,'rgba(40,120,255,0)');x.globalAlpha=1;x.fillStyle=g2;x.fillRect(bx-DW*.2,by-DW*.2,DW*.4,DW*.4);
+    eEmit(x,EE,OX,OY,DW,DH,t,mode==='talk'?amp:mode==='live'?amp*.4:0,ia,1)}
   let sum=0;
   for(const p of EP){const pr=ease((T-p.d)/2.2);sum+=pr;const m=1-pr,o=io(out);
     let X=OX+(p.tx*pr+p.sx*m)*DW,Y=OY+(p.ty*pr+p.sy*m)*DH;X+=p.ex*o*DW*.4;Y+=p.ey*o*DH*.3;
-    if(mode!=='idle'&&pr>=1){X+=Math.sin(t*40+p.tx*99)*amp*2;Y+=Math.cos(t*37+p.ty*99)*amp*2}
+    
     const tw=.6+.4*Math.sin(t*3+p.tx*60);x.globalAlpha=clamp(p.a*alpha*(pr<1||o>0?1:Math.max(.12,1-ia*.85)*tw+amp*.25)*(1-o*.7));x.fillStyle=p.c;x.fillRect(X,Y,2,2)}
   x.globalAlpha=1;x.globalCompositeOperation='source-over';return sum/EP.length}
 function setSub(t){const el=document.getElementById('sub');let cur=null;for(const v of S.voice)if(t>=v.t-.15&&t<=v.t+v.d+.9)cur=v;
@@ -336,6 +356,6 @@ function render(t){
   const g=clamp(t/.8)*clamp((S.end-t)/.8);if(g<1){x.fillStyle='rgba(0,0,0,'+(1-g)+')';x.fillRect(0,0,W,H)}
   document.querySelector('.ov').style.opacity=g;
 }
-window.setup=function(data){S=data;let n=0;const keys=['eolus','blades','logotext','horizons','connecting'];return Promise.all(keys.map(k=>new Promise(r=>{const i=new Image();i.onload=r;i.src=data.img[k];IMG[k]=i}))).then(()=>{init();return true})};
+window.setup=function(data){S=data;let n=0;const keys=['eolus','head','body','blades','logotext','horizons','connecting'];SPK=data.specks;return Promise.all(keys.map(k=>new Promise(r=>{const i=new Image();i.onload=r;i.src=data.img[k];IMG[k]=i}))).then(()=>{init();return true})};
 window.render=render;
 </script></body></html>
