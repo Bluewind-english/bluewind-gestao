@@ -1,0 +1,21 @@
+# id, quem, texto falado, legenda
+L=[
+('e1','e',"Welcome to Blue Wind Horizons.","Welcome to BlueWind HORIZONS."),
+('e2','e',"I am Eolus, the artificial intelligence of Blue Wind Technology. I connect processes and people.","I am Eolus, the artificial intelligence of BlueWind Technology. I connect processes and people."),
+('o2','o',"Eolus, what's the weather like today?","Eolus, what's the weather like today?"),
+('e8','e',"Good morning! Today in Pensacola it's sunny, seventy-four degrees, with a light breeze. A perfect day for wind energy.","Good morning! Today in Pensacola it's sunny, 74 °F, with a light breeze. A perfect day for wind energy."),
+('o3','o',"And how is the dollar today?","And how is the dollar today?"),
+('e9','e',"The U S dollar is at five ray-ice and thirty cents.","The US dollar is at 5 reais and 30 cents."),
+('o4','o',"Tell me a fun fact.","Tell me a fun fact."),
+('e10','e',"A single modern wind turbine can power hundreds of homes.","A single modern wind turbine can power hundreds of homes."),
+('o1','o',"Eolus, how is tomorrow's production?","Eolus, how is tomorrow's production?"),
+('e3','e',"Tomorrow, six nacelles are in the line. Nacelle N one zero five is two days behind schedule. I recommend moving one team from finishing to lamination.","Tomorrow, 6 nacelles are in the line. Nacelle N-105 is 2 days behind schedule. I recommend moving one team from Finishing to Lamination."),
+('e4','e',"Schedule. Production. Alerts. Messages. Daily dashboard. History. And team. Everything in one place, live from the cloud.","Schedule. Production. Alerts. Messages. Daily dashboard. History. And team. Everything in one place, live from the cloud."),
+('e5','e',"I am connected to every system in the factory. Recruitment and safety training. Resin dosing. Gel coat and vacuum monitoring. The production line. And the factory screens.","I am connected to every system in the factory: Recruitment and safety training. Resin dosing. Gel coat and vacuum monitoring. The production line. And the factory screens."),
+('o5','o',"Eolus, how is the factory today?","Eolus, how is the factory today?"),
+('e11','e',"I checked the cameras. The infusion area is disorganized; it needs attention. In assembly, the W T twenty nacelle is off the production rail. And in the parking lot, there is a car in the C E O's spot that is not the C E O's car.","I checked the cameras. The infusion area is disorganized; it needs attention. In assembly, the WT20 nacelle is off the production rail. And in the parking lot, there is a car in the CEO's spot that is not the CEO's car."),
+('e12','e',"Tyler, this is Eolus. Vacuum pump number three is failing on the infusion line. Please check it now.","Tyler, this is Eolus. Vacuum pump #3 is failing on the infusion line. Please check it now."),
+('e13','e',"Safety alert! A worker is at height without a harness.","Safety alert! A worker is at height without a harness."),
+('e14','e',"Mike, this is Eolus. A worker is on top of a wind turbine nacelle without a safety harness. Fall protection is required. Please act now.","Mike, this is Eolus. A worker is on top of a wind turbine nacelle without a safety harness. Fall protection is required. Please act now."),
+('e7','e',"Blue Wind. Connecting processes and people. The next phase starts now.","BlueWind. Connecting processes and people. The next phase starts now."),
+]
