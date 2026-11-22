@@ -40,7 +40,7 @@ def wordT(v,word):
     ws=v['sub'].split(' ');i=next(j for j,w in enumerate(ws) if w.lower().startswith(word.lower()));return v['t']+v['d']*.92*(i/len(ws))
 vv={v['id']:v for v in V}
 add(boom(),0.2);add(boom(),C['close']+1.1,0.8)
-for k in ['asm','daily','prod','feat','net','cam','call','safety','ann','emer','close']:add(whoosh(),C[k]-.7)
+for k in ['asm','daily','prod','feat','net','cam','call','safety','ann','emer','heat','close']:add(whoosh(),C[k]-.7)
 for i in range(18):add(beep(1800+rng.integers(0,1600),.08),C['asm']+0.3+i*0.2,0.5)
 add(beep(900,.25),C['asm']+4.0,1.2)
 for k in ['e8','e9','e10']:add(beep(1300,.12),vv[k]['t']-.1)
@@ -58,10 +58,11 @@ def chime(f,d=1.1):
     tt=np.arange(int(d*SR))/SR;return (np.sin(2*np.pi*f*tt)+.5*np.sin(2*np.pi*f*2*tt)+.25*np.sin(2*np.pi*f*3.01*tt))*np.exp(-tt*3.2)*0.22
 v15=vv['e15'];add(chime(659.25),v15['t']-2.0);add(chime(523.25),v15['t']-1.35)
 for i in range(3):add(beep(1900,.1),v15['t']-.3+i*.15,0.8)
-def siren(d):
-    tt=np.arange(int(d*SR))/SR;f=750+350*np.sin(2*np.pi*0.9*tt);ph=2*np.pi*np.cumsum(f)/SR;return (np.sign(np.sin(ph))*.35+np.sin(ph)*.65)*0.13*env(len(tt),.05,.3)
-v16=vv['e16'];sr=siren(v16['t']+v16['d']-C['emer']);g=np.ones(len(sr));a=int((v16['t']-C['emer']-.2)*SR);g[a:]=0.35;add(sr*g,C['emer']+.1)
-for i in range(3):add(beep(1400,.12),C['emer']+.8+i*.15,1.0)
+def backup(d):
+    tt=np.arange(int(d*SR))/SR;return np.sin(2*np.pi*1150*tt)*((tt%0.9)<0.45)*0.12
+v16=vv['e16'];add(backup(v16['t']-C['emer']+1.5),C['emer']+.2)
+for i in range(4):add(beep(1000 if i%2==0 else 760,.25),C['emer']+.6+i*.3,1.4)
+v17=vv['e17'];add(chime(783.99),v17['t']-2.0);add(chime(659.25),v17['t']-1.35)
 def readwav(p):
     w=wave.open(p);return np.frombuffer(w.readframes(w.getnframes()),dtype=np.int16).astype(float)/32768
 for v in V:add(readwav(f"aud/{v['id']}.wav"),v['t'],1.15 if v['who']=='e' else 1.05)
