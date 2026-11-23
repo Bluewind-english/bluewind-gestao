@@ -535,7 +535,7 @@ function speak(t,tries){t=sayFix(t);
     if(c!=='viewer_stopped')vInfo('🔇 A voz do Eolus não tocou ('+(c||'erro')+')');talkDone()});
 }
 
-function unlockAudio(){ac();unlockDeviceVoice()}
+function unlockAudio(){ac();unlockDeviceVoice();try{window.__EV&&window.__EV.mod&&window.__EV.mod.audio()}catch(e){}}
 
 function stopSpeak(){speakTok++;try{tts&&tts.stop()}catch(e){}}
 
@@ -1018,7 +1018,22 @@ function unlockDeviceVoice(){try{if(!window.claude&&'speechSynthesis' in window&
 if(!window.claude){
   try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}catch(e){}
   const dd=makeDeviceDictation();if(dd){dict=dd;hookDict();mic.style.display='flex';document.getElementById('hint').textContent=LANG==='en'?'Tap the mic and talk to Eolus, or type.':'Toque no microfone e fale com o Eolus, ou digite.'}
-  const dt=makeDeviceTTS();if(dt){tts=dt;dt.onState(({state})=>{if(!vmOn)return;if(state==='speaking'){if(vmMode!=='talk')vmSet('talk',TX('RESPONDENDO'))}else if(state==='idle'){talkDone()}})}
+  const dt=makeDeviceTTS();
+  /* voz do Eolus (a mesma do vídeo): Ryan em inglês, Faber em português; roda no próprio celular */
+  const EV=window.__EV={mod:null,imp:null};const vid=()=>LANG==='en'?'en_US-ryan-medium':'pt_BR-faber-medium';
+  function loadEV(){if(!EV.imp)EV.imp=import('./eolus-voz.js').then(m=>{EV.mod=m;return m});
+    return EV.imp.then(m=>m.ready(vid())?null:m.init(vid(),p=>{if(p&&p.total&&vmOn&&p.loaded<p.total)vInfo('⬇ '+(LANG==='en'?'Loading Eolus voice… ':'Baixando a voz do Eolus… ')+Math.round(p.loaded/p.total*100)+'%')})).catch(()=>{EV.imp=null})}
+  let cbS=()=>{};
+  const hy={
+    speak(t,o){const m=EV.mod;
+      if(m&&m.ready(vid()))return new Promise((res,rej)=>{m.speak(t,{voiceId:vid(),onStart:()=>cbS({state:'speaking'}),onEnd:()=>{cbS({state:'idle',reason:'completed'});res()}})
+        .catch(()=>{if(dt)dt.speak(t,o).then(res,rej);else{cbS({state:'idle'});rej({code:'error'})}})});
+      loadEV();return dt?dt.speak(t,o):Promise.reject({code:'error'})},
+    stop(){try{EV.mod&&EV.mod.stop()}catch(e){}dt&&dt.stop()},
+    onState(f){cbS=f;dt&&dt.onState(f)}};
+  tts=hy;hy.onState(({state})=>{if(!vmOn)return;if(state==='speaking'){if(vmMode!=='talk')vmSet('talk',TX('RESPONDENDO'))}else if(state==='idle'){talkDone()}});
+  ['touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{try{EV.mod&&EV.mod.audio()}catch(e){}},{passive:true,capture:true}));
+  setTimeout(loadEV,2500);setInterval(()=>{if(EV.mod&&!EV.mod.ready(vid()))loadEV()},6000);
 }
 
 
