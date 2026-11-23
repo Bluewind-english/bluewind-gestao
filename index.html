@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="apple-touch-icon" href="icon-180.png?v=3">
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-title" content="BW AI">
 <meta name="application-name" content="BW AI">
@@ -202,6 +202,10 @@ img,svg,canvas{-webkit-user-drag:none;user-drag:none}
 .back-home{font-size:10px!important;padding:9px 18px!important;opacity:.85;border-color:rgba(127,156,196,.5)!important}
 .orbit .core{left:0;top:0;width:100%;height:100%;aspect-ratio:auto;transform:none;border-radius:0}
 .vm-core{height:min(104vw,440px)!important}
+/* modo voz limpo: só o Eolus em tela cheia */
+#vm>*:not(#vmCv):not(#vmCore){display:none!important}
+#vmCore{position:fixed!important;inset:0!important;width:100%!important;max-width:none!important;height:auto!important}
+#vmOrb{display:none!important}
 </style>
 </head>
 <body>
@@ -875,7 +879,7 @@ function HUD(cv,o){
   requestAnimationFrame(frame);
 }
 HUD(document.getElementById('hudMain'),{label:true,wfrac:.64,space:false,box:()=>document.getElementById('orbit'),visible:()=>!vm.classList.contains('open'),mode:()=>busy?'think':'idle'});
-HUD(document.getElementById('vmCv'),{label:false,space:true,reassemble:true,box:()=>document.getElementById('vmCore'),visible:()=>vm.classList.contains('open'),mode:()=>vmMode});
+HUD(document.getElementById('vmCv'),{label:false,space:true,reassemble:true,wfrac:1.7,box:()=>document.getElementById('vmCore'),visible:()=>vm.classList.contains('open'),mode:()=>vmMode});
 function vmSet(mode,txt){vm.classList.toggle('live',mode==='live');vm.classList.toggle('talk',mode==='talk');vmSt.textContent=txt;
   vmMode=mode}
 function openVM(){SFX.turbine();unlockDeviceVoice();vmOn=true;vm.classList.add('open');vmYou.textContent='';vmAns.textContent='';vmSet('idle',TX(dict?'TOQUE NO EOLUS PARA FALAR':'MODO VOZ'));
@@ -884,7 +888,10 @@ function closeVM(){SFX.close();vmOn=false;vm.classList.remove('open');stopSpeak(
 document.getElementById('vmOpen').onclick=openVM;
 document.getElementById('hudMain').onclick=()=>openVM();document.getElementById('vmX').onclick=closeVM;
 document.getElementById('vmHome').onclick=closeVM;
-vm.addEventListener('click',e=>{if(e.target.closest('button'))return;if(!dict){vmSet('idle',TX('MICROFONE INDISPONÍVEL'));return}if(vmMode==='think'||busy)return;talkToggle()});
+/* arrastar o dedo para a direita volta ao início */
+(function(){let sx=0,sy=0,st=0;vm.addEventListener('touchstart',e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;st=Date.now()},{passive:true});
+  vm.addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(dx>70&&Math.abs(dy)<Math.max(90,dx*.7)&&Date.now()-st<900){window.__swipeAt=Date.now();closeTop()}},{passive:true})})();
+vm.addEventListener('click',e=>{if(window.__swipeAt&&Date.now()-window.__swipeAt<600)return;if(e.target.closest('button'))return;if(!dict){vmSet('idle',TX('MICROFONE INDISPONÍVEL'));return}if(vmMode==='think'||busy)return;talkToggle()});
 document.getElementById('vmType').onclick=()=>{closeVM();openTB()};
 async function vmHeard(raw){
   raw=(raw||'').trim();if(!raw){vmSet('idle',TX('NÃO ENTENDI — TOQUE DE NOVO'));return}
