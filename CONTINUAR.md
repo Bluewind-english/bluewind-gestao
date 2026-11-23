@@ -110,6 +110,12 @@ Observações:
      - Limites: 8 perguntas/min por aparelho, 30/min no total, 800/dia; pergunta até 400 caracteres; resposta até 600.
      - Precisa no Supabase: Secret `GEMINI_API_KEY`, função criada pelo editor com o nome `eolus-ask` e **"Verify JWT" desligado** (a chave publicável não é JWT; a proteção é a origem + limites).
      - Falta confirmar: o André fazer esses passos e testar no celular.
+1b. **Modo conversa (combinado em 23/11 para fazer junto com a IA):** tocar no Eolus uma vez e ir conversando, igual ao Gemini por voz.
+   - Depois que ele termina de falar (`talkDone`), reabrir o microfone sozinho (`dict.start()`).
+   - Terminar ao arrastar para a direita ou depois de ~10 s de silêncio.
+   - Se o iPhone bloquear o microfone sem toque, mostrar "toque para continuar".
+   - Interromper o Eolus no meio da fala fica para uma segunda etapa.
+   - **Mostrar prévia ao André antes de publicar.**
 2. Reforçar a segurança do Supabase (login) antes de colocar dados sensíveis.
 3. Coluna `obs_en` para o modo inglês.
 4. Skill Station (outro repositório, `skill-station`): integrar a apresentação de segurança como uma aba "Apresentação" (prévia já aprovada antes) e talvez renomear Turbine para Eolus lá. Ainda não feito.
