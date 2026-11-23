@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Eolus – teste de voz</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;background:radial-gradient(ellipse at 50% 0%,#0c2a5a,#02060f 70%);color:#dff1ff;font-family:-apple-system,Segoe UI,Roboto,sans-serif;touch-action:manipulation}
+.w{max-width:520px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) 18px 40px}
+h1{font-size:20px;letter-spacing:4px;text-align:center;color:#7fe0ff;text-shadow:0 0 12px #2a9dff}
+.sub{text-align:center;color:#8fb4d8;font-size:13px;margin:6px 0 18px}
+.card{border:1px solid rgba(90,180,255,.35);border-radius:16px;background:rgba(8,24,56,.6);padding:14px;margin-bottom:14px}
+.card h2{font-size:13px;letter-spacing:3px;color:#6cc8ff;margin-bottom:10px}
+button{width:100%;padding:13px;margin:5px 0;border-radius:12px;border:1px solid rgba(90,180,255,.5);background:rgba(20,60,120,.45);color:#e6f5ff;font-size:15px;font-weight:600;text-align:left}
+button:disabled{opacity:.35}
+button.main{text-align:center;background:linear-gradient(90deg,#1f6fff,#22c3ff);border:none}
+.bar{height:8px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#35e09a,#4fd8ff)}
+.st{font-size:13px;color:#9fc0e0;margin-top:8px;min-height:18px}
+.res{font:600 14px ui-monospace,monospace;color:#7dffb0;margin-top:6px;min-height:18px}
+canvas{width:100%;height:60px;display:block}
+.tabs{display:flex;gap:8px}.tabs button{text-align:center}
+.tabs button.on{background:linear-gradient(90deg,#1f6fff,#22c3ff);border:none}
+</style></head><body><div class="w">
+<h1>EOLUS · VOZ</h1>
+<div class="sub">Teste da voz do vídeo rodando direto no celular</div>
+<div class="card"><h2>1 · ESCOLHA A VOZ</h2>
+  <div class="tabs"><button id="tEN" class="on">🇺🇸 Ryan (inglês)</button><button id="tPT">🇧🇷 Faber (português)</button></div>
+  <button class="main" id="dl">⬇ Baixar a voz (só na 1ª vez)</button>
+  <div class="bar"><i id="pb"></i></div><div class="st" id="st">A voz fica guardada no celular depois do 1º download. Use Wi-Fi.</div>
+</div>
+<div class="card"><h2>2 · TOQUE PARA OUVIR</h2><div id="phr"></div><canvas id="cv" width="1000" height="120"></canvas><div class="res" id="res"></div></div>
+</div>
+<script type="module">
+import {init,speak,audio} from './eolus-voz.js';
+document.addEventListener('gesturestart',e=>e.preventDefault());
+const P={en_US:{id:'en_US-ryan-medium',ph:["Good morning! I am Eolus, the artificial intelligence of BlueWind Technology.","Tomorrow, six nacelles are in the line. Nacelle N one zero five is two days behind schedule.","Today in Pensacola it's sunny, seventy-four degrees, with a light breeze.","Attention, team. Please take a ten minute water break, and stay hydrated."]},
+ pt_BR:{id:'pt_BR-faber-medium',ph:["Bom dia! Eu sou o Eolus, a inteligência artificial da BlueWind Technology.","Amanhã temos seis nacelles na linha. A N cento e cinco está dois dias atrasada.","Hoje em Pensacola faz sol, vinte e três graus, com uma brisa leve.","Atenção, equipe. Façam uma pausa de dez minutos para beber água."]}};
+let lang=localStorage.getItem('vozLang')||'en_US',ready=false,busy=false;
+const $=id=>document.getElementById(id);
+function tabs(){$('tEN').classList.toggle('on',lang==='en_US');$('tPT').classList.toggle('on',lang==='pt_BR');
+  $('phr').innerHTML=P[lang].ph.map((t,i)=>'<button data-i="'+i+'" disabled>▶ '+t+'</button>').join('');
+  [...$('phr').children].forEach(b=>b.onclick=()=>say(P[lang].ph[+b.dataset.i]));}
+$('tEN').onclick=()=>{if(lang!=='en_US'){localStorage.setItem('vozLang','en_US');location.reload()}};
+$('tPT').onclick=()=>{if(lang!=='pt_BR'){localStorage.setItem('vozLang','pt_BR');location.reload()}};
+tabs();
+$('dl').onclick=async()=>{audio();$('dl').disabled=true;$('st').textContent='Preparando…';const t0=performance.now();
+  try{await init(P[lang].id,p=>{if(p.total){const f=p.loaded/p.total;$('pb').style.width=(f*100)+'%';$('st').textContent='Baixando a voz… '+Math.round(p.loaded/1e6)+' de '+Math.round(p.total/1e6)+' MB'}});
+    ready=true;$('pb').style.width='100%';$('st').textContent='✓ Voz pronta ('+((performance.now()-t0)/1000).toFixed(1)+' s). Na próxima vez abre na hora.';
+    [...$('phr').children].forEach(b=>b.disabled=false);$('dl').textContent='✓ Voz carregada'}
+  catch(e){$('st').textContent='Erro: '+e.message;$('dl').disabled=false}};
+const cv=$('cv'),x=cv.getContext('2d');let AN=null;
+(function draw(){requestAnimationFrame(draw);x.clearRect(0,0,1000,120);if(!AN)return;const d=new Uint8Array(AN.frequencyBinCount);AN.getByteFrequencyData(d);
+  for(let i=0;i<64;i++){const v=d[i+2]/255,h=4+v*110;x.fillStyle='hsl('+(110+i)+',90%,60%)';x.fillRect(i*15.6,60-h/2,10,h)}})();
+async function say(t){if(!ready||busy)return;busy=true;audio();$('res').textContent='Gerando…';
+  const r=await speak(t,{onStart:(an,ms)=>{AN=an;$('res').textContent='Começou a falar em '+(ms/1000).toFixed(1)+' s'},onEnd:()=>{AN=null}});
+  busy=false}
+</script></body></html>
