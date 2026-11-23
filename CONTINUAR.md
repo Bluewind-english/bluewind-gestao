@@ -104,6 +104,12 @@ Observações:
      - mantém a identidade do Eolus, da Bluewind e do CEO
    - O app chama essa função quando `quickAnswer` / `liveAnswer` não sabem. Se a IA falhar, usa `sorry()`.
    - Aviso dado ao André: no plano grátis, o Google pode usar os dados, então nada confidencial. Depois, plano pago (Claude ou Gemini).
+   - **23/11: código pronto e publicado.** Função em `supabase/functions/eolus-ask/index.ts`; no `index.html` a função `cloudAsk()` é chamada dentro de `ask()` quando `quickFactory`/`quickAnswerEN` não respondem.
+     - A função **não recebe dados da fábrica** (só pergunta, idioma e as últimas 6 falas). Produção/cronograma continuam respondidos pelo próprio app.
+     - Modelos tentados em ordem: Secret `GEMINI_MODEL` (opcional), `gemini-flash-latest`, `gemini-3.6-flash`, `gemini-3.8-flash`, `gemini-flash-lite-latest`. Tenta com busca no Google e, se não puder, sem.
+     - Limites: 8 perguntas/min por aparelho, 30/min no total, 800/dia; pergunta até 400 caracteres; resposta até 600.
+     - Precisa no Supabase: Secret `GEMINI_API_KEY`, função criada pelo editor com o nome `eolus-ask` e **"Verify JWT" desligado** (a chave publicável não é JWT; a proteção é a origem + limites).
+     - Falta confirmar: o André fazer esses passos e testar no celular.
 2. Reforçar a segurança do Supabase (login) antes de colocar dados sensíveis.
 3. Coluna `obs_en` para o modo inglês.
 4. Skill Station (outro repositório, `skill-station`): integrar a apresentação de segurança como uma aba "Apresentação" (prévia já aprovada antes) e talvez renomear Turbine para Eolus lá. Ainda não feito.

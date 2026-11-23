@@ -720,6 +720,21 @@ async function liveAnswer(q){
 let greetPrefix='';
 function quickAnswer(q){greetPrefix='';const id=identity(q);if(id)return id;const c=cordial(q);if(c&&typeof c==='string')return c;if(c&&c.ai){greetPrefix=c.greet;return null}return quickFactory(q)}
 let askCtl=null;
+/* ---------- IA na nuvem (função eolus-ask no Supabase → Gemini) ---------- */
+const ABORTED={};
+async function cloudAsk(q){
+  if(q.trim().split(/\s+/).length<2)return null;
+  const ctl=new AbortController();askCtl=ctl;const to=setTimeout(()=>{try{ctl.abort()}catch(e){}},15000);
+  try{
+    const r=await fetch(SB_URL+'/functions/v1/eolus-ask',{method:'POST',signal:ctl.signal,
+      headers:{'Content-Type':'application/json','apikey':SB_KEY},
+      body:JSON.stringify({q:q.slice(0,400),lang:LANG==='en'?'en':'pt',hist:hist.slice(-6)})});
+    if(askCtl!==ctl)return ABORTED;
+    if(!r.ok)return null;
+    const d=await r.json();const a=(d&&d.answer||'').trim();return a||null;
+  }catch(e){return askCtl!==ctl?ABORTED:null}
+  finally{clearTimeout(to)}
+}
 async function ask(q){
   q=(q||'').trim();if(!q)return;if(busy&&askCtl){try{askCtl.abort()}catch(e){}}busy=true;inp.value='';addB('u',q);stopSpeak();
   setState('Pensando…',true);SFX.think();const b=addB('a','…');pendingArea=null;let ans='';
@@ -740,7 +755,11 @@ async function ask(q){
       }finally{clearTimeout(to)}
       if(askCtl!==ctl)return;
       if(!ans){ans=(greetPrefix?greetPrefix+' ':'')+localAnswer(q);vInfo(LANG==='en'?'⚠ AI took too long — quick answer used':'⚠ A IA demorou — usei a resposta rápida')}
-    }else ans=localAnswer(q);
+    }else{
+      const lf=LANG==='en'?quickAnswerEN(q):quickFactory(q);
+      if(lf)ans=lf;
+      else{const c=await cloudAsk(q);if(c===ABORTED)return;ans=(greetPrefix?greetPrefix+' ':'')+(c||sorry(q))}
+    }
   }catch(e){
     if(e&&e.code==='not_granted')sample=null;
     if(e&&e.name==='AbortError'&&!busy)return;
