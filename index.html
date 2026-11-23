@@ -507,18 +507,22 @@ function demoAnswerEN(){const am=addD(1),d106=DAYS_EN[addD(3).getDay()];
    'Two points need attention: N-106 is still about four hours behind because of unstable vacuum in the infusion, and its demolding was rescheduled to '+d106+'. '+
    'N-104 is still waiting for quality release, which may delay finishing. I suggest prioritizing the N-104 inspection at the start of the shift.'}
 function quickAnswerEN(q){const s=q.toLowerCase();
-  if(/dollar|weather|temperature|news/.test(s))return null;
-  if(/tomorrow/.test(s)&&/produc|delay|late|problem|status|how/.test(s))return tomorrowSummary(true);
-  if(/tomorrow/.test(s)&&/schedul|agenda|plan/.test(s)){pendingArea='crono';return 'Tomorrow: '+enItems(CRONO[1])+'.'}
-  if(/delay|late|behind|problem/.test(s)){const b=NAC.filter(n=>n.status==='bad'),w=NAC.filter(n=>n.status==='warn');return (b.length?b.map(n=>n.id+' is delayed'+(n.obs?': '+n.obs:'')+'.').join(' '):'Nothing is delayed today.')+(w.length?' Also watch '+w.map(n=>n.id+(n.obs?' ('+n.obs+')':'')).join('; ')+'.':'')}
-  if(/alert/.test(s)){pendingArea='alert';return alertSummary(true)}
-  if(/produc|status|nacelle|line/.test(s)){pendingArea='prod';return prodSummary(true)}
-  if(/schedul|agenda|today/.test(s)){pendingArea='crono';return 'Today: '+enItems(CRONO[0])+'.'}
-  if(/message|chat/.test(s)){pendingArea='msg';return 'Opening messages.'}
-  if(/what time|time is it/.test(s))return "It's "+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'.';
+  const PROD=/\b(production|producing|nacelles?|production line)\b/,CRON=/\b(schedule|agenda|scheduled|plan for)\b/,DELAY=/\b(delays?|delayed|late|behind schedule)\b/;
+  if(/\b(dollar|weather|temperature|news)\b/.test(s))return null;
+  if(/\btomorrow\b/.test(s)&&(PROD.test(s)||DELAY.test(s)))return tomorrowSummary(true);
+  if(/\btomorrow\b/.test(s)&&CRON.test(s)){pendingArea='crono';return 'Tomorrow: '+enItems(CRONO[1])+'.'}
+  if(DELAY.test(s)){const b=NAC.filter(n=>n.status==='bad'),w=NAC.filter(n=>n.status==='warn');return (b.length?b.map(n=>n.id+' is delayed'+(n.obs?': '+n.obs:'')+'.').join(' '):'Nothing is delayed today.')+(w.length?' Also watch '+w.map(n=>n.id+(n.obs?' ('+n.obs+')':'')).join('; ')+'.':'')}
+  if(/\balerts?\b/.test(s)){pendingArea='alert';return alertSummary(true)}
+  if(PROD.test(s)){pendingArea='prod';return prodSummary(true)}
+  if(CRON.test(s)){pendingArea='crono';return 'Today: '+enItems(CRONO[0])+'.'}
+  if(/\bmessages?\b/.test(s)){pendingArea='msg';return 'Opening messages.'}
+  if(/\b(what time|time is it)\b/.test(s))return "It's "+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'.';
   return null}
-function localAnswerEN(q){const s=q.toLowerCase();if(/dollar|weather|temperature|news/.test(s))return "This prototype isn't connected to the internet yet. In the final version, I'll look that up in real time for you.";
-  return quickAnswerEN(q)||"I can help you with the schedule, production, alerts and messages. What would you like to know?"}
+function sorry(q){const w=(q||'').trim().split(/\s+/).filter(Boolean).length,en=LANG==='en';
+  if(w<2)return en?"Sorry, I didn't catch that. Could you say it again?":'Desculpe, não entendi. Pode repetir?';
+  return en?pick(["I'm sorry, I don't have access to that information at the moment.","Forgive me, I don't have access to that information right now."])
+           :pick(['Me perdoe, não tenho acesso a essa informação no momento.','Desculpe, não tenho acesso a essa informação no momento.'])}
+function localAnswerEN(q){return quickAnswerEN(q)||sorry(q)}
 let speakTok=0;
 const VOICE={v:'rounded',r:.95};
 function talkDone(){if(vmOn&&vmMode==='talk')vmSet('idle',TX('TOQUE NO EOLUS PARA FALAR'))}
@@ -591,22 +595,22 @@ function tomorrowSummary(en){const c=CRONO.find(x=>x.d===1),items=c?c.itens:[];
 function localAnswer(q){
   if(LANG==='en')return localAnswerEN(q);
   const s=q.toLowerCase();
-  if(/temperat|clima|tempo|d[oó]lar|cota|not[ií]cia/.test(s))return 'Neste protótipo ainda não estou conectado à internet para isso. Na versão final, eu busco em tempo real para você.';
-  return quickFactory(q)||'Posso te ajudar com o cronograma, a produção, os alertas e as mensagens. O que você gostaria de saber?';
+  return quickFactory(q)||sorry(q);
 }
 function quickFactory(q){
   if(LANG==='en')return quickAnswerEN(q);
-  const s=q.toLowerCase();
-  if(/d[oó]lar|temperat|clima|not[ií]cia|tempo (hoje|amanh)/.test(s))return null;
-  if(/amanh/.test(s)&&/produ|atras|problem|status|como est/.test(s))return tomorrowSummary(false);
-  if(/amanh/.test(s)&&/crono|agenda|program/.test(s)){pendingArea='crono';return 'Amanhã: '+CRONO[1].itens.map(i=>i[0]+', '+i[1]+', '+i[2]).join('; ')+'.'}
-  if(/atras|problem/.test(s)){const a=NAC.filter(n=>n.status==='bad'),w=NAC.filter(n=>n.status==='warn');
-    return (a.length?a.map(n=>'A '+n.id+' está atrasada: '+n.obs.toLowerCase()+'.').join(' '):'Nada atrasado hoje.')+(w.length?' Atenção também para '+w.map(n=>'a '+n.id+', '+n.obs.toLowerCase()).join('; ')+'.':'')}
-  if(/alerta/.test(s)){pendingArea='alert';return alertSummary(false)}
-  if(/(produ|status|nacelle|linha)/.test(s)){pendingArea='prod';return prodSummary(false)}
-  if(/crono|agenda|hoje/.test(s)){pendingArea='crono';return 'Hoje: '+CRONO[0].itens.map(i=>i[0]+', '+i[1]+', '+i[2]).join('; ')+'.'}
-  if(/mensag|chat/.test(s)){pendingArea='msg';return 'Abrindo as mensagens. A última é da Qualidade: '+MSGS[0].m}
-  if(/^que horas|horas s[aã]o|que hora/.test(s))return 'Agora são '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'.';
+  const s=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const PROD=/\b(producao|produzindo|produzido|nacelles?|naceles?|linha de producao)\b/,CRON=/\b(cronograma|agenda|programacao|programado|programada)\b/,
+        DELAY=/\b(atrasad[ao]s?|atraso|atrasos)\b/,TOM=/\bamanha\b/;
+  if(/\b(dolar|temperatura|clima|noticias?)\b/.test(s))return null;
+  if(TOM.test(s)&&(PROD.test(s)||DELAY.test(s)||CRON.test(s)))return tomorrowSummary(false);
+  if(DELAY.test(s)){const a=NAC.filter(n=>n.status==='bad'),w=NAC.filter(n=>n.status==='warn');
+    return (a.length?a.map(n=>'A '+n.id+' está atrasada'+(n.obs?': '+n.obs.toLowerCase():'')+'.').join(' '):'Nada atrasado hoje.')+(w.length?' Atenção também para '+w.map(n=>'a '+n.id+(n.obs?', '+n.obs.toLowerCase():'')).join('; ')+'.':'')}
+  if(/\balertas?\b/.test(s)){pendingArea='alert';return alertSummary(false)}
+  if(PROD.test(s)){pendingArea='prod';return prodSummary(false)}
+  if(CRON.test(s)){pendingArea='crono';return 'Hoje: '+CRONO[0].itens.map(i=>i[0]+', '+i[1]+', '+i[2]).join('; ')+'.'}
+  if(/\bmensage(m|ns)\b/.test(s)){pendingArea='msg';return 'Abrindo as mensagens. A última é da Qualidade: '+MSGS[0].m}
+  if(/\b(que horas|horas sao|que hora)\b/.test(s))return 'Agora são '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'.';
   return null;
 }
 const pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -614,7 +618,7 @@ function cordial(q){
   const s=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/^(turbin[aeiou]?|a?eol[ou]s?|eolo|iolus)[,.!]?\s*/,'');
   const h=new Date().getHours(),en=LANG==='en';
   const said={
-    morning:/\b(bom dia|good morning)\b/.test(s),afternoon:/\b(boa tarde|good afternoon)\b/.test(s),evening:/\b(boa noite|good evening|good night)\b/.test(s),
+    morning:/^(bom dia|good morning)\b/.test(s),afternoon:/^(boa tarde|good afternoon)\b/.test(s),evening:/^(boa noite|good evening|good night)\b/.test(s)||/^(tchau|bye)\b.*\b(boa noite|good night)\b/.test(s),
     hi:/^(oi|ola|e ai|hey|hi|hello)\b/.test(s),
     how:/(tudo bem|tudo bom|como (vai|voce esta|esta voce|vc esta)|beleza\?|how are you|how's it going|how are things)/.test(s),
     fine:/(estou bem|to bem|tô bem|tudo otimo|tudo certo|tudo tranquilo|i'm (fine|good|great)|i am (fine|good)|doing (well|good))/.test(s),
@@ -649,8 +653,8 @@ function cordial(q){
   if(!out.length)return null;
   const rest=s.replace(/\b(bom dia|boa tarde|boa noite|good (morning|afternoon|evening|night)|oi|ola|e ai|hey|hi|hello|tudo bem|tudo bom|how are you|obrigad\w*|valeu|thanks?( you)?)\b[,.!?]*/g,' ').replace(/\s+/g,' ').trim();
   const fq=rest.length>6?quickFactory(rest):null;
-  if(rest.length>14&&!fq&&!(said.fine||said.wish||said.how||said.bye||said.ask))return {ai:true,greet:out.join(' ')};
-  return out.join(' ')+(fq?' '+fq:'');
+  if(rest.length>14&&!fq&&!(said.fine||said.wish||said.how||said.bye||said.ask))return {ai:true,greet:out[0]};
+  return (fq?out[0]:out.join(' '))+(fq?' '+fq:'');
 }
 function identity(q){
   const s=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');const en=LANG==='en';
@@ -680,14 +684,14 @@ const HOL_PT={"New Year's Day":'Ano Novo','Martin Luther King, Jr. Day':'Dia de 
 async function liveAnswer(q){
   const s=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''),en=LANG==='en';
   // moedas
-  if(/(dolar|dollar|cambio|cotacao|exchange rate|euro|\breal\b|reais|moeda|currency)/.test(s)){
+  if(/\b(dolar|dollar|cambio|cotacao do dolar|exchange rate|euros?|reais|moeda|currency)\b/.test(s)){
     const d=await getJSON('https://open.er-api.com/v6/latest/USD',10*60000);if(!d||!d.rates||!d.rates.BRL)return null;
     const brl=d.rates.BRL,eurBrl=brl/d.rates.EUR,usdEur=1/d.rates.EUR;
     if(/euro/.test(s))return en?'One euro is worth '+eurBrl.toFixed(2)+' Brazilian reais, and '+usdEur.toFixed(2)+' US dollars today.':'O euro está valendo R$ '+fmtBR(eurBrl,2)+' hoje. Em dólar, um euro vale US$ '+fmtBR(usdEur,2)+'.';
     return en?'Today one US dollar is worth '+brl.toFixed(2)+' Brazilian reais. The euro is at '+eurBrl.toFixed(2)+' reais.':'Hoje o dólar está valendo R$ '+fmtBR(brl,2)+'. O euro está em R$ '+fmtBR(eurBrl,2)+'.';
   }
   // clima
-  if(/(clima|tempo (hoje|amanha|agora|la fora)|temperatura|chov|chuva|frio|calor|graus|previsao|weather|temperature|rain|forecast|hot|cold outside)/.test(s)){
+  if(/\b(clima|tempo (hoje|amanha|agora|la fora)|temperatura|chovendo|chover|chovera|chuva|frio|calor|previsao do tempo|weather|temperature|raining|rain|forecast|hot outside|cold outside)\b/.test(s)){
     const u='https://api.open-meteo.com/v1/forecast?latitude='+CITY.lat+'&longitude='+CITY.lon+'&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&timezone='+encodeURIComponent(CITY.tz)+'&forecast_days=2';
     const d=await getJSON(u,10*60000);if(!d||!d.current)return null;
     const W=en?WMO_EN:WMO_PT,tom=/(amanha|tomorrow)/.test(s),i=tom?1:0;
@@ -699,7 +703,7 @@ async function liveAnswer(q){
              :'Agora em '+CITY.name+' está fazendo '+Math.round(c.temperature_2m)+' graus, sensação de '+Math.round(c.apparent_temperature)+'. Condição: '+(W[c.weather_code]||'tempo variável')+'. Hoje a máxima é de '+Math.round(mx)+' e a mínima de '+Math.round(mn)+' graus, com '+pr+'% de chance de chuva.';
   }
   // feriados
-  if(/(feriado|holiday)/.test(s)){
+  if(/\b(feriados?|holidays?)\b/.test(s)){
     const d=await getJSON('https://date.nager.at/api/v3/NextPublicHolidays/US',6*3600000);if(!Array.isArray(d)||!d.length)return null;
     const h=d.find(x=>x.global!==false)||d[0],[y,m,dd]=h.date.split('-').map(Number),dt=new Date(y,m-1,dd);
     const days=Math.round((dt-new Date(new Date().setHours(0,0,0,0)))/86400000);
