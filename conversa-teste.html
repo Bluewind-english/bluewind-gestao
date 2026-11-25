@@ -306,7 +306,7 @@ img,svg,canvas{-webkit-user-drag:none;user-drag:none}
 <div class="vm" id="vm">
   <canvas id="vmCv"></canvas>
   <button class="x" id="vmX">✕</button>
-  <div class="vm-st" id="vmSt">MODO VOZ</div>
+  <div class="vm-st" id="vmSt">MODO VOZ</div><div id="vmDbg" style="font:11px monospace;color:#7fffb0;opacity:.85;text-align:center;margin-top:4px">TESTE · modo conversa</div>
   <div class="vm-core" id="vmCore"><div class="vm-orb" id="vmOrb"><svg><use href="#blades"/></svg></div></div>
   <div class="vm-you" id="vmYou"></div>
   <div class="vm-ans" id="vmAns"></div>
@@ -528,10 +528,11 @@ const VOICE={v:'rounded',r:.95};
 /* Modo conversa: depois de tocar uma vez, o Eolus volta a ouvir sozinho quando termina de falar.
    Termina ao arrastar para a direita, ao fechar ou depois de ~9 s de silêncio. */
 let conv=false,convT=null;
-function talkDone(){if(vmOn&&vmMode==='talk'){if(conv&&dict)convListen();else vmSet('idle',TX('TOQUE NO EOLUS PARA FALAR'))}}
+function talkDone(){dbg('terminou de falar');if(vmOn&&vmMode==='talk'){if(conv&&dict)convListen();else vmSet('idle',TX('TOQUE NO EOLUS PARA FALAR'))}}
 function convListen(){clearTimeout(convT);vmSet('idle',TX('SUA VEZ…'));
   convT=setTimeout(()=>{if(!vmOn||!conv||!dict||listening||busy)return;finalTxt='';lastPartial='';vmYou.textContent='';
-    dict.start().catch(()=>{conv=false;vmSet('idle',TX('TOQUE NO EOLUS PARA CONTINUAR'))})},600)}
+    dbg('reabrindo o microfone…');
+    dict.start().catch(e=>{dbg('iPhone bloqueou: '+((e&&e.code)||'erro'));conv=false;vmSet('idle',TX('TOQUE NO EOLUS PARA CONTINUAR'))})},600)}
 function sayFix(t){
   t=t.replace(/Zoll?et/g,LANG==='en'?'Zolay':'Zolê');
   t=t.replace(/\bEolus\b/g,LANG==='en'?'Eeolus':'Éolus');
@@ -788,13 +789,16 @@ mic.onclick=()=>{
   dict.start().catch(e=>{if(e&&e.code==='not_granted'){mic.style.display='none';dict=null}setState('Pronto para ajudar',false)});
 };
 let silT=null,listening=false,discard=false,lastPartial='';
-function armSilence(ms){if(!vmOn)return;clearTimeout(silT);silT=setTimeout(()=>{if(listening&&dict)dict.stop().catch(()=>{})},ms)}
+let lastHeard='',capT=null;
+function armSilence(ms){if(!vmOn)return;clearTimeout(silT);silT=setTimeout(()=>{if(listening&&dict){dbg('fim da fala → enviando');dict.stop().catch(()=>{})}},ms)}
+function heard(t){t=(t||'').trim();if(!t||t===lastHeard)return;lastHeard=t;armSilence(2000)}
+function dbg(m){const e=document.getElementById('vmDbg');if(e)e.textContent='TESTE · '+m}
 function hookDict(){
-  dict.onFinal(({text})=>{text=(text||'').trim();lastPartial='';if(!text||finalTxt.endsWith(text))return;finalTxt=(finalTxt+' '+text).trim();if(vmOn){vmYou.textContent='“'+finalTxt+'”'}else inp.value=finalTxt;armSilence(4000)});
-  dict.onPartial(({text})=>{lastPartial=(text||'').trim();const t=(finalTxt+' '+text).trim();if(vmOn)vmYou.textContent=t;else inp.value=t;armSilence(4000)});
+  dict.onFinal(({text})=>{text=(text||'').trim();lastPartial='';if(!text||finalTxt.endsWith(text))return;finalTxt=(finalTxt+' '+text).trim();if(vmOn){vmYou.textContent='“'+finalTxt+'”';heard(finalTxt);return}inp.value=finalTxt;armSilence(4000)});
+  dict.onPartial(({text})=>{lastPartial=(text||'').trim();const t=(finalTxt+' '+text).trim();if(vmOn){vmYou.textContent=t;heard(t);return}inp.value=t;armSilence(4000)});
   dict.onState(({state})=>{
-    if(state==='listening'){listening=true;SFX.listen();if(vmOn){armSilence(conv?9000:6000);vmSet('live',TX('OUVINDO…'));vmBtn.textContent=TX('TOQUE PARA ENVIAR');return}mic.classList.add('live');setState('Ouvindo…',true)}
-    else{listening=false;clearTimeout(silT);if(discard){discard=false;finalTxt='';mic.classList.remove('live');return}
+    if(state==='listening'){listening=true;SFX.listen();if(vmOn){lastHeard='';armSilence(conv?9000:7000);clearTimeout(capT);capT=setTimeout(()=>{if(listening&&dict)dict.stop().catch(()=>{})},20000);dbg('ouvindo');vmSet('live',TX('OUVINDO…'));vmBtn.textContent=TX('TOQUE PARA ENVIAR');return}mic.classList.add('live');setState('Ouvindo…',true)}
+    else{listening=false;clearTimeout(silT);clearTimeout(capT);if(discard){discard=false;finalTxt='';mic.classList.remove('live');return}
       vmBtn.textContent=TX('TOQUE NO EOLUS PARA FALAR');mic.classList.remove('live');setState('Pronto para ajudar',false);if(vmOn){const q=(finalTxt+' '+lastPartial).trim();finalTxt='';lastPartial='';if(q)vmSet('think',TX('PROCESSANDO…'));vmHeard(q);return}if(finalTxt||lastPartial){inp.value=(finalTxt+' '+lastPartial).trim();finalTxt='';lastPartial='';try{inp.focus()}catch(e){}}}
   });
 }
@@ -1025,10 +1029,12 @@ function makeDeviceDictation(){
       rec.onresult=e=>{let part='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)cbF({text:r[0].transcript.trim()});else part+=r[0].transcript}
         if(part)cbP({text:part.trim()})};
       rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){rej({code:'not_granted'})}else{try{rec.stop()}catch(_){}}};
-      rec.onend=()=>{cbS({state:'idle',reason:'stopped'});if(stopRes){stopRes();stopRes=null}};
+      let ended=false;rec.__end=()=>{if(ended)return;ended=true;cbS({state:'idle',reason:'stopped'});if(stopRes){stopRes();stopRes=null}};
+      rec.onend=()=>rec.__end();
       try{rec.start()}catch(e){rej({code:'unavailable'})}
     })},
-    stop(){return new Promise(r=>{if(!rec){r();return}stopRes=r;try{rec.stop()}catch(e){r()}setTimeout(()=>{if(stopRes){stopRes();stopRes=null}},1500)})},
+    stop(){return new Promise(r=>{if(!rec){r();return}const me=rec;stopRes=r;try{me.stop()}catch(e){}
+      setTimeout(()=>{if(me.__end){try{me.abort()}catch(e){}me.__end()}},1200)})},
     onPartial(f){cbP=f},onFinal(f){cbF=f},onState(f){cbS=f}
   };
 }
