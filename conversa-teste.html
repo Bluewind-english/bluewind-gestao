@@ -915,9 +915,15 @@ HUD(document.getElementById('hudMain'),{label:true,wfrac:.64,space:false,box:()=
 HUD(document.getElementById('vmCv'),{label:false,space:true,reassemble:true,wfrac:1.7,box:()=>document.getElementById('vmCore'),visible:()=>vm.classList.contains('open'),mode:()=>vmMode});
 function vmSet(mode,txt){vm.classList.toggle('live',mode==='live');vm.classList.toggle('talk',mode==='talk');vmSt.textContent=txt;
   vmMode=mode}
-function openVM(){SFX.turbine();unlockDeviceVoice();vmOn=true;vm.classList.add('open');vmYou.textContent='';vmAns.textContent='';vmSet('idle',TX(dict?'TOQUE NO EOLUS PARA FALAR':'MODO VOZ'));
+/* Tela sempre acesa no modo voz (Wake Lock); solta ao sair */
+let wakeL=null;
+async function keepAwake(){try{if(!vmOn||!('wakeLock' in navigator)||wakeL)return;wakeL=await navigator.wakeLock.request('screen');
+  wakeL.addEventListener('release',()=>{wakeL=null});dbg('tela sempre acesa')}catch(e){dbg('tela acesa indisponível ('+(e&&e.name||'erro')+')')}}
+function letSleep(){try{if(wakeL)wakeL.release()}catch(e){}wakeL=null}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&vmOn)keepAwake()});
+function openVM(){SFX.turbine();unlockDeviceVoice();vmOn=true;keepAwake();vm.classList.add('open');vmYou.textContent='';vmAns.textContent='';vmSet('idle',TX(dict?'TOQUE NO EOLUS PARA FALAR':'MODO VOZ'));
   vmBtn.style.display=dict?'block':'none';vmBtn.textContent=TX('TOQUE NO EOLUS PARA FALAR')}
-function closeVM(){SFX.close();vmOn=false;conv=false;clearTimeout(convT);vm.classList.remove('open');stopSpeak();if(dict&&listening){discard=true;dict.stop().catch(()=>{})}vmSet('idle',TX('MODO VOZ'))}
+function closeVM(){SFX.close();vmOn=false;conv=false;letSleep();clearTimeout(convT);vm.classList.remove('open');stopSpeak();if(dict&&listening){discard=true;dict.stop().catch(()=>{})}vmSet('idle',TX('MODO VOZ'))}
 document.getElementById('vmOpen').onclick=openVM;
 document.getElementById('hudMain').onclick=()=>openVM();document.getElementById('vmX').onclick=closeVM;
 document.getElementById('vmHome').onclick=closeVM;
@@ -940,7 +946,7 @@ function talkToggle(){
   unlockDeviceVoice();
   if(!dict)return false;
   if(dict&&listening){clearTimeout(silT);dict.stop().catch(()=>{});return true}
-  if(dict){stopSpeak();clearTimeout(convT);conv=true;finalTxt='';lastPartial='';vmYou.textContent='';vmAns.textContent='';
+  if(dict){keepAwake();stopSpeak();clearTimeout(convT);conv=true;finalTxt='';lastPartial='';vmYou.textContent='';vmAns.textContent='';
     dict.start().catch(e=>{if(e&&e.code==='not_granted'){dict=null;vmBtn.style.display='none'}vmSet('idle',TX('MICROFONE INDISPONÍVEL'))});return true}
   return false}
 vmBtn.onclick=()=>{
