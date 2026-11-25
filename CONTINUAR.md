@@ -109,8 +109,8 @@ Observações:
      - Modelos tentados em ordem: Secret `GEMINI_MODEL` (opcional), `gemini-flash-latest`, `gemini-3.6-flash`, `gemini-3.8-flash`, `gemini-flash-lite-latest`. Tenta com busca no Google e, se não puder, sem.
      - Limites: 8 perguntas/min por aparelho, 30/min no total, 800/dia; pergunta até 400 caracteres; resposta até 600.
      - Precisa no Supabase: Secret `GEMINI_API_KEY`, função criada pelo editor com o nome `eolus-ask` e **"Verify JWT" desligado** (a chave publicável não é JWT; a proteção é a origem + limites).
-     - Falta confirmar: o André fazer esses passos e testar no celular.
-1b. **Modo conversa (combinado em 23/11 para fazer junto com a IA):** tocar no Eolus uma vez e ir conversando, igual ao Gemini por voz.
+     - **24/11: IA LIGADA e funcionando.** Secret `GEMINI_API_KEY` criado; função implantada pelo conector do Supabase (verify_jwt=false). Conta grátis não permite a busca no Google (429) e o primeiro modelo que funciona é `gemini-flash-lite-latest` sem busca. **Pendente: o André trocar a chave do Gemini (apareceu em fotos na conversa) e apagar o secret antigo `Gemini_API_key`.**
+1b. **Modo conversa — FEITO e publicado em 24/11** (aprovado pelo André na prévia `conversa-teste.html`; envia sozinho após ~2 s de silêncio, reabre o microfone após a resposta, encerra após ~9 s calado; tela acesa no modo voz via Wake Lock). Plano original: tocar no Eolus uma vez e ir conversando, igual ao Gemini por voz.
    - Depois que ele termina de falar (`talkDone`), reabrir o microfone sozinho (`dict.start()`).
    - Terminar ao arrastar para a direita ou depois de ~10 s de silêncio.
    - Se o iPhone bloquear o microfone sem toque, mostrar "toque para continuar".

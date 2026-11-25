@@ -495,7 +495,7 @@ let LANG='pt';try{LANG=localStorage.getItem('turbineLang')||'pt'}catch(e){}
 const TXM={'MODO VOZ':'VOICE MODE','OUVINDO…':'LISTENING…','PROCESSANDO…':'PROCESSING…','RESPONDENDO':'RESPONDING','TOQUE PARA FALAR DE NOVO':'TAP TO SPEAK AGAIN','TOQUE NO EOLUS':'TAP EOLUS',
  'TOQUE PARA ENVIAR':'TAP TO SEND','TOQUE E DIGA: "EOLUS…"':'TAP AND SAY: "EOLUS…"','TOQUE NO EOLUS PARA FALAR':'TAP EOLUS TO SPEAK','NÃO ENTENDI — TOQUE DE NOVO':"DIDN'T CATCH THAT — TAP AGAIN",'PRONTO':'READY',
  'MICROFONE INDISPONÍVEL':'MICROPHONE UNAVAILABLE','VER DEMONSTRAÇÃO':'SEE DEMO','▶ DEMONSTRAÇÃO':'▶ DEMO','⌨ DIGITAR PERGUNTA':'⌨ TYPE A QUESTION','‹ VOLTAR AO INÍCIO':'‹ BACK TO HOME',
- 'Sim? Estou ouvindo.':"Yes? I'm listening.",'COMECE COM "EOLUS…"':'START WITH "EOLUS…"'};
+ 'Sim? Estou ouvindo.':"Yes? I'm listening.",'CONVERSA ENCERRADA — TOQUE PARA FALAR':'CONVERSATION ENDED — TAP TO SPEAK','TOQUE NO EOLUS PARA CONTINUAR':'TAP EOLUS TO CONTINUE','SUA VEZ…':'YOUR TURN…','COMECE COM "EOLUS…"':'START WITH "EOLUS…"'};
 function TX(t){return LANG==='en'&&TXM[t]?TXM[t]:t}
 const EN_TXT={'Início do gel coat no molde 2':'gel coat start on mold 2','Verificação de vácuo / cura':'vacuum and cure check','Inspeção final da qualidade':'final quality inspection',
  'Acabamento – lixamento e retoque':'finishing, sanding and touch-up','Infusão – fechamento da bolsa':'infusion bag sealing','Desmoldagem':'demolding','Liberação para expedição':'release for shipping',
@@ -525,7 +525,14 @@ function sorry(q){const w=(q||'').trim().split(/\s+/).filter(Boolean).length,en=
 function localAnswerEN(q){return quickAnswerEN(q)||sorry(q)}
 let speakTok=0;
 const VOICE={v:'rounded',r:.95};
-function talkDone(){if(vmOn&&vmMode==='talk')vmSet('idle',TX('TOQUE NO EOLUS PARA FALAR'))}
+/* Modo conversa: depois de tocar uma vez, o Eolus volta a ouvir sozinho quando termina de falar.
+   Termina ao arrastar para a direita, ao fechar ou depois de ~9 s de silêncio. */
+let conv=false,convT=null;
+function talkDone(){dbg('terminou de falar');if(vmOn&&vmMode==='talk'){if(conv&&dict)convListen();else vmSet('idle',TX('TOQUE NO EOLUS PARA FALAR'))}}
+function convListen(){clearTimeout(convT);vmSet('idle',TX('SUA VEZ…'));
+  convT=setTimeout(()=>{if(!vmOn||!conv||!dict||listening||busy)return;finalTxt='';lastPartial='';vmYou.textContent='';
+    dbg('reabrindo o microfone…');
+    dict.start().catch(e=>{dbg('iPhone bloqueou: '+((e&&e.code)||'erro'));conv=false;vmSet('idle',TX('TOQUE NO EOLUS PARA CONTINUAR'))})},600)}
 function sayFix(t){
   t=t.replace(/Zoll?et/g,LANG==='en'?'Zolay':'Zolê');
   t=t.replace(/\bEolus\b/g,LANG==='en'?'Eeolus':'Éolus');
@@ -782,13 +789,16 @@ mic.onclick=()=>{
   dict.start().catch(e=>{if(e&&e.code==='not_granted'){mic.style.display='none';dict=null}setState('Pronto para ajudar',false)});
 };
 let silT=null,listening=false,discard=false,lastPartial='';
-function armSilence(ms){if(!vmOn)return;clearTimeout(silT);silT=setTimeout(()=>{if(listening&&dict)dict.stop().catch(()=>{})},ms)}
+let lastHeard='',capT=null;
+function armSilence(ms){if(!vmOn)return;clearTimeout(silT);silT=setTimeout(()=>{if(listening&&dict){dbg('fim da fala → enviando');dict.stop().catch(()=>{})}},ms)}
+function heard(t){t=(t||'').trim();if(!t||t===lastHeard)return;lastHeard=t;armSilence(2000)}
+function dbg(m){const e=document.getElementById('vmDbg');if(e)e.textContent='TESTE · '+m}
 function hookDict(){
-  dict.onFinal(({text})=>{text=(text||'').trim();lastPartial='';if(!text||finalTxt.endsWith(text))return;finalTxt=(finalTxt+' '+text).trim();if(vmOn){vmYou.textContent='“'+finalTxt+'”'}else inp.value=finalTxt;armSilence(4000)});
-  dict.onPartial(({text})=>{lastPartial=(text||'').trim();const t=(finalTxt+' '+text).trim();if(vmOn)vmYou.textContent=t;else inp.value=t;armSilence(4000)});
+  dict.onFinal(({text})=>{text=(text||'').trim();lastPartial='';if(!text||finalTxt.endsWith(text))return;finalTxt=(finalTxt+' '+text).trim();if(vmOn){vmYou.textContent='“'+finalTxt+'”';heard(finalTxt);return}inp.value=finalTxt;armSilence(4000)});
+  dict.onPartial(({text})=>{lastPartial=(text||'').trim();const t=(finalTxt+' '+text).trim();if(vmOn){vmYou.textContent=t;heard(t);return}inp.value=t;armSilence(4000)});
   dict.onState(({state})=>{
-    if(state==='listening'){listening=true;SFX.listen();if(vmOn){armSilence(6000);vmSet('live',TX('OUVINDO…'));vmBtn.textContent=TX('TOQUE PARA ENVIAR');return}mic.classList.add('live');setState('Ouvindo…',true)}
-    else{listening=false;clearTimeout(silT);if(discard){discard=false;finalTxt='';mic.classList.remove('live');return}
+    if(state==='listening'){listening=true;SFX.listen();if(vmOn){lastHeard='';armSilence(conv?9000:7000);clearTimeout(capT);capT=setTimeout(()=>{if(listening&&dict)dict.stop().catch(()=>{})},20000);dbg('ouvindo');vmSet('live',TX('OUVINDO…'));vmBtn.textContent=TX('TOQUE PARA ENVIAR');return}mic.classList.add('live');setState('Ouvindo…',true)}
+    else{listening=false;clearTimeout(silT);clearTimeout(capT);if(discard){discard=false;finalTxt='';mic.classList.remove('live');return}
       vmBtn.textContent=TX('TOQUE NO EOLUS PARA FALAR');mic.classList.remove('live');setState('Pronto para ajudar',false);if(vmOn){const q=(finalTxt+' '+lastPartial).trim();finalTxt='';lastPartial='';if(q)vmSet('think',TX('PROCESSANDO…'));vmHeard(q);return}if(finalTxt||lastPartial){inp.value=(finalTxt+' '+lastPartial).trim();finalTxt='';lastPartial='';try{inp.focus()}catch(e){}}}
   });
 }
@@ -905,9 +915,15 @@ HUD(document.getElementById('hudMain'),{label:true,wfrac:.64,space:false,box:()=
 HUD(document.getElementById('vmCv'),{label:false,space:true,reassemble:true,wfrac:1.7,box:()=>document.getElementById('vmCore'),visible:()=>vm.classList.contains('open'),mode:()=>vmMode});
 function vmSet(mode,txt){vm.classList.toggle('live',mode==='live');vm.classList.toggle('talk',mode==='talk');vmSt.textContent=txt;
   vmMode=mode}
-function openVM(){SFX.turbine();unlockDeviceVoice();vmOn=true;vm.classList.add('open');vmYou.textContent='';vmAns.textContent='';vmSet('idle',TX(dict?'TOQUE NO EOLUS PARA FALAR':'MODO VOZ'));
+/* Tela sempre acesa no modo voz (Wake Lock); solta ao sair */
+let wakeL=null;
+async function keepAwake(){try{if(!vmOn||!('wakeLock' in navigator)||wakeL)return;wakeL=await navigator.wakeLock.request('screen');
+  wakeL.addEventListener('release',()=>{wakeL=null});dbg('tela sempre acesa')}catch(e){dbg('tela acesa indisponível ('+(e&&e.name||'erro')+')')}}
+function letSleep(){try{if(wakeL)wakeL.release()}catch(e){}wakeL=null}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&vmOn)keepAwake()});
+function openVM(){SFX.turbine();unlockDeviceVoice();vmOn=true;keepAwake();vm.classList.add('open');vmYou.textContent='';vmAns.textContent='';vmSet('idle',TX(dict?'TOQUE NO EOLUS PARA FALAR':'MODO VOZ'));
   vmBtn.style.display=dict?'block':'none';vmBtn.textContent=TX('TOQUE NO EOLUS PARA FALAR')}
-function closeVM(){SFX.close();vmOn=false;vm.classList.remove('open');stopSpeak();if(dict&&listening){discard=true;dict.stop().catch(()=>{})}vmSet('idle',TX('MODO VOZ'))}
+function closeVM(){SFX.close();vmOn=false;conv=false;letSleep();clearTimeout(convT);vm.classList.remove('open');stopSpeak();if(dict&&listening){discard=true;dict.stop().catch(()=>{})}vmSet('idle',TX('MODO VOZ'))}
 document.getElementById('vmOpen').onclick=openVM;
 document.getElementById('hudMain').onclick=()=>openVM();document.getElementById('vmX').onclick=closeVM;
 document.getElementById('vmHome').onclick=closeVM;
@@ -917,11 +933,11 @@ document.getElementById('vmHome').onclick=closeVM;
 vm.addEventListener('click',e=>{if(window.__swipeAt&&Date.now()-window.__swipeAt<600)return;if(e.target.closest('button'))return;if(!dict){vmSet('idle',TX('MICROFONE INDISPONÍVEL'));return}if(vmMode==='think'||busy)return;talkToggle()});
 document.getElementById('vmType').onclick=()=>{closeVM();openTB()};
 async function vmHeard(raw){
-  raw=(raw||'').trim();if(!raw){vmSet('idle',TX('NÃO ENTENDI — TOQUE DE NOVO'));return}
+  raw=(raw||'').trim();if(!raw){if(conv){conv=false;vmSet('idle',TX('CONVERSA ENCERRADA — TOQUE PARA FALAR'));return}vmSet('idle',TX('NÃO ENTENDI — TOQUE DE NOVO'));return}
   const m=raw.match(/(?:turb[iaeu]n[ae]?|a?[eé]ol[ou]s?|[eé]olo|iolus|e olos)[,.!]?\s*(.*)/i);
   const q0=m?(m[1]||'').trim():raw;
   if(!m){vmYou.textContent='“'+raw+'”';vmSet('think',TX('PROCESSANDO…'));vmAns.textContent='';const an=await ask(raw);if(!vmOn)return;vmAns.textContent=an||'';vmSet('talk',TX('RESPONDENDO'));return}
-  const q=(m[1]||'').trim();if(!q){SFX.reply();vmAns.textContent=TX('Sim? Estou ouvindo.');vmSet('idle',TX('PRONTO'));speak(TX('Sim? Estou ouvindo.'));return}
+  const q=(m[1]||'').trim();if(!q){SFX.reply();vmAns.textContent=TX('Sim? Estou ouvindo.');vmSet(conv?'talk':'idle',TX('PRONTO'));speak(TX('Sim? Estou ouvindo.'));return}
   vmYou.textContent='“'+raw+'”';vmSet('think',TX('PROCESSANDO…'));vmAns.textContent='';
   const ans=await ask(q);if(!vmOn)return;vmAns.textContent=ans||'';vmSet('talk',TX('RESPONDENDO'));
 }
@@ -930,7 +946,7 @@ function talkToggle(){
   unlockDeviceVoice();
   if(!dict)return false;
   if(dict&&listening){clearTimeout(silT);dict.stop().catch(()=>{});return true}
-  if(dict){stopSpeak();finalTxt='';lastPartial='';vmYou.textContent='';vmAns.textContent='';
+  if(dict){keepAwake();stopSpeak();clearTimeout(convT);conv=true;finalTxt='';lastPartial='';vmYou.textContent='';vmAns.textContent='';
     dict.start().catch(e=>{if(e&&e.code==='not_granted'){dict=null;vmBtn.style.display='none'}vmSet('idle',TX('MICROFONE INDISPONÍVEL'))});return true}
   return false}
 vmBtn.onclick=()=>{
@@ -1019,10 +1035,12 @@ function makeDeviceDictation(){
       rec.onresult=e=>{let part='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)cbF({text:r[0].transcript.trim()});else part+=r[0].transcript}
         if(part)cbP({text:part.trim()})};
       rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){rej({code:'not_granted'})}else{try{rec.stop()}catch(_){}}};
-      rec.onend=()=>{cbS({state:'idle',reason:'stopped'});if(stopRes){stopRes();stopRes=null}};
+      let ended=false;rec.__end=()=>{if(ended)return;ended=true;cbS({state:'idle',reason:'stopped'});if(stopRes){stopRes();stopRes=null}};
+      rec.onend=()=>rec.__end();
       try{rec.start()}catch(e){rej({code:'unavailable'})}
     })},
-    stop(){return new Promise(r=>{if(!rec){r();return}stopRes=r;try{rec.stop()}catch(e){r()}setTimeout(()=>{if(stopRes){stopRes();stopRes=null}},1500)})},
+    stop(){return new Promise(r=>{if(!rec){r();return}const me=rec;stopRes=r;try{me.stop()}catch(e){}
+      setTimeout(()=>{if(me.__end){try{me.abort()}catch(e){}me.__end()}},1200)})},
     onPartial(f){cbP=f},onFinal(f){cbF=f},onState(f){cbS=f}
   };
 }
