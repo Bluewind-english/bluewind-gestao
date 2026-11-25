@@ -25,10 +25,10 @@ const GLOBAL_PER_DAY = 800;       // perguntas por dia no total
 // Dá para escolher outro criando o Secret GEMINI_MODEL.
 const MODELS = [
   Deno.env.get("GEMINI_MODEL") || "",
+  "gemini-flash-lite-latest",
+  "gemini-3.5-flash",
   "gemini-flash-latest",
   "gemini-3.6-flash",
-  "gemini-3.8-flash",
-  "gemini-flash-lite-latest",
 ].filter(Boolean);
 
 // ---------- limites (memória da função; zera quando a função reinicia) ----------
@@ -148,16 +148,19 @@ async function askGemini(key: string, lang: "pt" | "en", contents: Turn[]): Prom
   const withSearch = { ...base, tools: [{ google_search: {} }] };
 
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 12_000);
+  const timer = setTimeout(() => ctl.abort(), 14_000);
   try {
+    // Tenta cada modelo com busca e sem busca; se a cota/modelo não estiver
+    // disponível no plano grátis (404, 400, 429), passa para a próxima opção.
     for (const model of MODELS) {
       for (const body of [withSearch, base]) {
         const r = await callGemini(key, model, body, ctl.signal);
-        if (r.status === 404) break;                 // modelo não existe: tenta o próximo
-        if (r.status === 400 && body === withSearch) continue; // busca não aceita: tenta sem
         if (!r.ok) {
-          console.error("gemini", model, r.status, (await r.text()).slice(0, 300));
-          return null;
+          console.error("gemini", model, body === withSearch ? "busca" : "sem-busca", r.status,
+            (await r.text()).slice(0, 160));
+          if (r.status === 401 || r.status === 403) return null; // chave inválida
+          if (r.status === 404) break;                           // modelo não existe
+          continue;                                              // 400/429/5xx: próxima opção
         }
         const d = await r.json();
         const parts = d?.candidates?.[0]?.content?.parts || [];
