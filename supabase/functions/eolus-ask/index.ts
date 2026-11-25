@@ -92,7 +92,7 @@ function systemPrompt(lang: "pt" | "en"): string {
     "Você NÃO tem acesso aos dados internos da fábrica (produção, cronograma, alertas, mensagens, pessoas, compras, qualidade). Nunca invente esses dados, números, nomes ou status.",
     `Se a pergunta depender desses dados internos, ou de qualquer informação que você não tem com segurança, responda exatamente: "${sorry}"`,
     "Para perguntas gerais (conhecimento, explicações, ideias, contas, traduções, inglês, segurança do trabalho em geral), responda normalmente.",
-    "A resposta será LIDA EM VOZ ALTA: no máximo 2 ou 3 frases curtas, sem markdown, sem listas, sem asteriscos, sem emojis, sem links. Escreva números e unidades de forma fácil de falar.",
+    "A resposta será LIDA EM VOZ ALTA: responda em 1 ou 2 frases curtas e diretas (no máximo 3 só se for preciso), sem markdown, sem listas, sem asteriscos, sem emojis, sem links. Escreva números e unidades de forma fácil de falar.",
     "Seja cordial, calmo e gentil, como um assistente de confiança. Se a pessoa cumprimentar, responda o cumprimento com simpatia antes.",
     "Recuse com educação pedidos ofensivos, perigosos ou que exponham dados pessoais de alguém.",
     lang === "en"
@@ -136,7 +136,7 @@ async function askGemini(key: string, lang: "pt" | "en", contents: Turn[]): Prom
   const base = {
     systemInstruction: { parts: [{ text: systemPrompt(lang) }] },
     contents,
-    generationConfig: { temperature: 0.6, maxOutputTokens: 1024 },
+    generationConfig: { temperature: 0.6, maxOutputTokens: 400 },
     safetySettings: [
       { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
       { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
@@ -144,7 +144,8 @@ async function askGemini(key: string, lang: "pt" | "en", contents: Turn[]): Prom
       { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
     ],
   };
-  // Com busca no Google (para notícias e dados do dia) — se a conta não permitir, tenta sem.
+  // Busca no Google: a conta grátis não permite (dava erro 429 e atrasava). Só liga com o Secret GEMINI_SEARCH=1.
+  const useSearch = Deno.env.get("GEMINI_SEARCH") === "1";
   const withSearch = { ...base, tools: [{ google_search: {} }] };
 
   const ctl = new AbortController();
@@ -153,7 +154,7 @@ async function askGemini(key: string, lang: "pt" | "en", contents: Turn[]): Prom
     // Tenta cada modelo com busca e sem busca; se a cota/modelo não estiver
     // disponível no plano grátis (404, 400, 429), passa para a próxima opção.
     for (const model of MODELS) {
-      for (const body of [withSearch, base]) {
+      for (const body of (useSearch ? [withSearch, base] : [base])) {
         const r = await callGemini(key, model, body, ctl.signal);
         if (!r.ok) {
           console.error("gemini", model, body === withSearch ? "busca" : "sem-busca", r.status,

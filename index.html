@@ -791,7 +791,7 @@ mic.onclick=()=>{
 let silT=null,listening=false,discard=false,lastPartial='';
 let lastHeard='',capT=null;
 function armSilence(ms){if(!vmOn)return;clearTimeout(silT);silT=setTimeout(()=>{if(listening&&dict){dbg('fim da fala → enviando');dict.stop().catch(()=>{})}},ms)}
-function heard(t){t=(t||'').trim();if(!t||t===lastHeard)return;lastHeard=t;armSilence(2000)}
+function heard(t){t=(t||'').trim();if(!t||t===lastHeard)return;lastHeard=t;armSilence(1200)}
 function dbg(m){const e=document.getElementById('vmDbg');if(e)e.textContent='TESTE · '+m}
 function hookDict(){
   dict.onFinal(({text})=>{text=(text||'').trim();lastPartial='';if(!text||finalTxt.endsWith(text))return;finalTxt=(finalTxt+' '+text).trim();if(vmOn){vmYou.textContent='“'+finalTxt+'”';heard(finalTxt);return}inp.value=finalTxt;armSilence(4000)});
@@ -1057,7 +1057,7 @@ function makeDeviceTTS(){
       u.onerror=e=>{cbS({state:'idle',reason:'error'});rej({code:e.error||'error'})};
       let done=false;const fin=()=>{if(done)return;done=true;clearTimeout(guard);cbS({state:'idle',reason:'completed'});res()};
       u.onend=fin;const guard=setTimeout(fin,3000+t.length*75);
-      speechSynthesis.cancel();setTimeout(()=>{try{speechSynthesis.speak(u)}catch(e){fin()}},350)}catch(e){rej({code:'error'})}})},
+      speechSynthesis.cancel();setTimeout(()=>{try{speechSynthesis.speak(u)}catch(e){fin()}},120)}catch(e){rej({code:'error'})}})},
     stop(){try{speechSynthesis.cancel()}catch(e){}},
     onState(f){cbS=f}
   };
@@ -1071,13 +1071,24 @@ if(!window.claude){
   const EV=window.__EV={mod:null,imp:null};const vid=()=>LANG==='en'?'en_US-ryan-medium':'pt_BR-faber-medium';
   function loadEV(){if(!EV.imp)EV.imp=import('./eolus-voz.js').then(m=>{EV.mod=m;return m});
     return EV.imp.then(m=>m.ready(vid())?null:m.init(vid(),p=>{if(p&&p.total&&vmOn&&p.loaded<p.total)vInfo('⬇ '+(LANG==='en'?'Loading Eolus voice… ':'Baixando a voz do Eolus… ')+Math.round(p.loaded/p.total*100)+'%')})).catch(()=>{EV.imp=null})}
-  let cbS=()=>{};
+  let cbS=()=>{},hyTok=0;
   const hy={
     speak(t,o){const m=EV.mod;
-      if(m&&m.ready(vid()))return new Promise((res,rej)=>{m.speak(t,{voiceId:vid(),onStart:()=>cbS({state:'speaking'}),onEnd:()=>{cbS({state:'idle',reason:'completed'});res()}})
-        .catch(()=>{if(dt)dt.speak(t,o).then(res,rej);else{cbS({state:'idle'});rej({code:'error'})}})});
+      if(m&&m.ready(vid())){
+        /* fala frase por frase: gera a 1ª, começa a tocar e já prepara a próxima (resposta começa mais rápido) */
+        const tok=++hyTok,dead=()=>tok!==hyTok,v=vid();
+        const parts=(t.match(/[^.!?…]+[.!?…]*\s*/g)||[t]).map(x=>x.trim()).filter(Boolean);
+        const chunks=[];for(const x of parts){if(chunks.length&&(chunks[chunks.length-1].length<25))chunks[chunks.length-1]+=' '+x;else chunks.push(x)}
+        if(!m.gen)return new Promise((res,rej)=>{m.speak(t,{voiceId:v,onStart:()=>cbS({state:'speaking'}),onEnd:()=>{cbS({state:'idle',reason:'completed'});res()}}).catch(()=>{if(dt)dt.speak(t,o).then(res,rej);else{cbS({state:'idle'});rej({code:'error'})}})});
+        return (async()=>{let started=false;
+          try{let next=m.gen(chunks[0],{voiceId:v});
+            for(let i=0;i<chunks.length;i++){const buf=await next;if(dead())return;
+              next=i+1<chunks.length?m.gen(chunks[i+1],{voiceId:v}):null;if(next)next.catch(()=>{});
+              await m.play(buf,{cancelled:dead,onStart:()=>{if(!started){started=true;cbS({state:'speaking'})}}});if(dead())return}
+            cbS({state:'idle',reason:'completed'})}
+          catch(e){if(dead())return;if(!started&&dt)return dt.speak(t,o);cbS({state:'idle'});throw {code:'error'}}})()}
       loadEV();return dt?dt.speak(t,o):Promise.reject({code:'error'})},
-    stop(){try{EV.mod&&EV.mod.stop()}catch(e){}dt&&dt.stop()},
+    stop(){hyTok++;try{EV.mod&&EV.mod.stop()}catch(e){}dt&&dt.stop()},
     onState(f){cbS=f;dt&&dt.onState(f)}};
   tts=hy;hy.onState(({state})=>{if(!vmOn)return;if(state==='speaking'){if(vmMode!=='talk')vmSet('talk',TX('RESPONDENDO'))}else if(state==='idle'){talkDone()}});
   ['touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{try{EV.mod&&EV.mod.audio()}catch(e){}},{passive:true,capture:true}));
