@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
   const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "?";
   if (rateLimited(ip)) return json({ error: "rate_limited" }, 429, origin);
 
-  const key = Deno.env.get("GEMINI_API_KEY");
+  const key = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("Gemini_API_key");
   if (!key) return json({ error: "no_key" }, 500, origin);
 
   let payload: { q?: unknown; lang?: unknown; hist?: unknown };
